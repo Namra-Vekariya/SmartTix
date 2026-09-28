@@ -37,3 +37,4 @@ E:\smartTix\src\SmartTix.API\obj\Debug\net10.0\refint\SmartTix.API.dll
 E:\smartTix\src\SmartTix.API\obj\Debug\net10.0\SmartTix.API.pdb
 E:\smartTix\src\SmartTix.API\obj\Debug\net10.0\SmartTix.API.genruntimeconfig.cache
 E:\smartTix\src\SmartTix.API\obj\Debug\net10.0\ref\SmartTix.API.dll
+E:\smartTix\src\SmartTix.API\obj\Debug\net10.0\SmartTix.API.sourcelink.json

@@ -15,3 +15,4 @@ E:\smartTix\src\SmartTix.Infrastructure\obj\Debug\net10.0\SmartTix.Infrastructur
 E:\smartTix\src\SmartTix.Infrastructure\obj\Debug\net10.0\refint\SmartTix.Infrastructure.dll
 E:\smartTix\src\SmartTix.Infrastructure\obj\Debug\net10.0\SmartTix.Infrastructure.pdb
 E:\smartTix\src\SmartTix.Infrastructure\obj\Debug\net10.0\ref\SmartTix.Infrastructure.dll
+E:\smartTix\src\SmartTix.Infrastructure\obj\Debug\net10.0\SmartTix.Infrastructure.sourcelink.json

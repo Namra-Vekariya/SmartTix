@@ -13,3 +13,4 @@ E:\smartTix\src\SmartTix.Application\obj\Debug\net10.0\SmartTix.Application.dll
 E:\smartTix\src\SmartTix.Application\obj\Debug\net10.0\refint\SmartTix.Application.dll
 E:\smartTix\src\SmartTix.Application\obj\Debug\net10.0\SmartTix.Application.pdb
 E:\smartTix\src\SmartTix.Application\obj\Debug\net10.0\ref\SmartTix.Application.dll
+E:\smartTix\src\SmartTix.Application\obj\Debug\net10.0\SmartTix.Application.sourcelink.json

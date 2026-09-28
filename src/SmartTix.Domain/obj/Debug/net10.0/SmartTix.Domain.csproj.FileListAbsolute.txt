@@ -9,3 +9,4 @@ E:\smartTix\src\SmartTix.Domain\obj\Debug\net10.0\SmartTix.Domain.dll
 E:\smartTix\src\SmartTix.Domain\obj\Debug\net10.0\refint\SmartTix.Domain.dll
 E:\smartTix\src\SmartTix.Domain\obj\Debug\net10.0\SmartTix.Domain.pdb
 E:\smartTix\src\SmartTix.Domain\obj\Debug\net10.0\ref\SmartTix.Domain.dll
+E:\smartTix\src\SmartTix.Domain\obj\Debug\net10.0\SmartTix.Domain.sourcelink.json
