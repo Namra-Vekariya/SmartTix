@@ -1,0 +1,15 @@
+E:\smartTix\src\SmartTix.Application\bin\Debug\net10.0\SmartTix.Application.deps.json
+E:\smartTix\src\SmartTix.Application\bin\Debug\net10.0\SmartTix.Application.dll
+E:\smartTix\src\SmartTix.Application\bin\Debug\net10.0\SmartTix.Application.pdb
+E:\smartTix\src\SmartTix.Application\bin\Debug\net10.0\SmartTix.Domain.dll
+E:\smartTix\src\SmartTix.Application\bin\Debug\net10.0\SmartTix.Domain.pdb
+E:\smartTix\src\SmartTix.Application\obj\Debug\net10.0\SmartTix.Application.csproj.AssemblyReference.cache
+E:\smartTix\src\SmartTix.Application\obj\Debug\net10.0\SmartTix.Application.GeneratedMSBuildEditorConfig.editorconfig
+E:\smartTix\src\SmartTix.Application\obj\Debug\net10.0\SmartTix.Application.AssemblyInfoInputs.cache
+E:\smartTix\src\SmartTix.Application\obj\Debug\net10.0\SmartTix.Application.AssemblyInfo.cs
+E:\smartTix\src\SmartTix.Application\obj\Debug\net10.0\SmartTix.Application.csproj.CoreCompileInputs.cache
+E:\smartTix\src\SmartTix.Application\obj\Debug\net10.0\SmartTix.289CAFB7.Up2Date
+E:\smartTix\src\SmartTix.Application\obj\Debug\net10.0\SmartTix.Application.dll
+E:\smartTix\src\SmartTix.Application\obj\Debug\net10.0\refint\SmartTix.Application.dll
+E:\smartTix\src\SmartTix.Application\obj\Debug\net10.0\SmartTix.Application.pdb
+E:\smartTix\src\SmartTix.Application\obj\Debug\net10.0\ref\SmartTix.Application.dll

@@ -1,0 +1,11 @@
+E:\smartTix\src\SmartTix.Domain\bin\Debug\net10.0\SmartTix.Domain.deps.json
+E:\smartTix\src\SmartTix.Domain\bin\Debug\net10.0\SmartTix.Domain.dll
+E:\smartTix\src\SmartTix.Domain\bin\Debug\net10.0\SmartTix.Domain.pdb
+E:\smartTix\src\SmartTix.Domain\obj\Debug\net10.0\SmartTix.Domain.GeneratedMSBuildEditorConfig.editorconfig
+E:\smartTix\src\SmartTix.Domain\obj\Debug\net10.0\SmartTix.Domain.AssemblyInfoInputs.cache
+E:\smartTix\src\SmartTix.Domain\obj\Debug\net10.0\SmartTix.Domain.AssemblyInfo.cs
+E:\smartTix\src\SmartTix.Domain\obj\Debug\net10.0\SmartTix.Domain.csproj.CoreCompileInputs.cache
+E:\smartTix\src\SmartTix.Domain\obj\Debug\net10.0\SmartTix.Domain.dll
+E:\smartTix\src\SmartTix.Domain\obj\Debug\net10.0\refint\SmartTix.Domain.dll
+E:\smartTix\src\SmartTix.Domain\obj\Debug\net10.0\SmartTix.Domain.pdb
+E:\smartTix\src\SmartTix.Domain\obj\Debug\net10.0\ref\SmartTix.Domain.dll

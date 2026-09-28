@@ -1,0 +1,56 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "SmartTix.Infrastructure/1.0.0": {
+        "dependencies": {
+          "SmartTix.Application": "1.0.0",
+          "SmartTix.Domain": "1.0.0"
+        },
+        "runtime": {
+          "SmartTix.Infrastructure.dll": {}
+        }
+      },
+      "SmartTix.Application/1.0.0": {
+        "dependencies": {
+          "SmartTix.Domain": "1.0.0"
+        },
+        "runtime": {
+          "SmartTix.Application.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      },
+      "SmartTix.Domain/1.0.0": {
+        "runtime": {
+          "SmartTix.Domain.dll": {
+            "assemblyVersion": "1.0.0.0",
+            "fileVersion": "1.0.0.0"
+          }
+        }
+      }
+    }
+  },
+  "libraries": {
+    "SmartTix.Infrastructure/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "SmartTix.Application/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "SmartTix.Domain/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

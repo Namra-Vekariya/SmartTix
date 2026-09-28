@@ -1,0 +1,13 @@
+# Angular
+frontend/smarttix-angular/node_modules/
+frontend/smarttix-angular/dist/
+frontend/smarttix-angular/.angular/
+
+# Environment secrets — never commit these
+appsettings.Development.json
+.env
+*.env
+
+# Docker volumes
+postgres_data/
+redis_data/

@@ -1,0 +1,17 @@
+E:\smartTix\src\SmartTix.Infrastructure\bin\Debug\net10.0\SmartTix.Infrastructure.deps.json
+E:\smartTix\src\SmartTix.Infrastructure\bin\Debug\net10.0\SmartTix.Infrastructure.dll
+E:\smartTix\src\SmartTix.Infrastructure\bin\Debug\net10.0\SmartTix.Infrastructure.pdb
+E:\smartTix\src\SmartTix.Infrastructure\bin\Debug\net10.0\SmartTix.Application.dll
+E:\smartTix\src\SmartTix.Infrastructure\bin\Debug\net10.0\SmartTix.Domain.dll
+E:\smartTix\src\SmartTix.Infrastructure\bin\Debug\net10.0\SmartTix.Domain.pdb
+E:\smartTix\src\SmartTix.Infrastructure\bin\Debug\net10.0\SmartTix.Application.pdb
+E:\smartTix\src\SmartTix.Infrastructure\obj\Debug\net10.0\SmartTix.Infrastructure.csproj.AssemblyReference.cache
+E:\smartTix\src\SmartTix.Infrastructure\obj\Debug\net10.0\SmartTix.Infrastructure.GeneratedMSBuildEditorConfig.editorconfig
+E:\smartTix\src\SmartTix.Infrastructure\obj\Debug\net10.0\SmartTix.Infrastructure.AssemblyInfoInputs.cache
+E:\smartTix\src\SmartTix.Infrastructure\obj\Debug\net10.0\SmartTix.Infrastructure.AssemblyInfo.cs
+E:\smartTix\src\SmartTix.Infrastructure\obj\Debug\net10.0\SmartTix.Infrastructure.csproj.CoreCompileInputs.cache
+E:\smartTix\src\SmartTix.Infrastructure\obj\Debug\net10.0\SmartTix.682E73C2.Up2Date
+E:\smartTix\src\SmartTix.Infrastructure\obj\Debug\net10.0\SmartTix.Infrastructure.dll
+E:\smartTix\src\SmartTix.Infrastructure\obj\Debug\net10.0\refint\SmartTix.Infrastructure.dll
+E:\smartTix\src\SmartTix.Infrastructure\obj\Debug\net10.0\SmartTix.Infrastructure.pdb
+E:\smartTix\src\SmartTix.Infrastructure\obj\Debug\net10.0\ref\SmartTix.Infrastructure.dll

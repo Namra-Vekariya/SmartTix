@@ -1,0 +1,24 @@
+{
+  "version": 2,
+  "dgSpecHash": "kRTIG8MC7lY=",
+  "success": true,
+  "projectFilePath": "E:\\smartTix\\src\\SmartTix.API\\SmartTix.API.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Namra Vekariya\\.nuget\\packages\\microsoft.aspnetcore.openapi\\10.0.3\\microsoft.aspnetcore.openapi.10.0.3.nupkg.sha512",
+    "C:\\Users\\Namra Vekariya\\.nuget\\packages\\microsoft.openapi\\2.0.0\\microsoft.openapi.2.0.0.nupkg.sha512"
+  ],
+  "logs": [
+    {
+      "code": "NU1903",
+      "level": "Warning",
+      "message": "Package 'Microsoft.OpenApi' 2.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-v5pm-xwqc-g5wc",
+      "projectPath": "E:\\smartTix\\src\\SmartTix.API\\SmartTix.API.csproj",
+      "warningLevel": 1,
+      "filePath": "E:\\smartTix\\src\\SmartTix.API\\SmartTix.API.csproj",
+      "libraryId": "Microsoft.OpenApi",
+      "targetGraphs": [
+        "net10.0"
+      ]
+    }
+  ]
+}

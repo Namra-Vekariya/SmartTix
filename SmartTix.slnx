@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/SmartTix.API/SmartTix.API.csproj" />
+    <Project Path="src/SmartTix.Application/SmartTix.Application.csproj" />
+    <Project Path="src/SmartTix.Domain/SmartTix.Domain.csproj" />
+    <Project Path="src/SmartTix.Infrastructure/SmartTix.Infrastructure.csproj" />
+  </Folder>
+</Solution>
