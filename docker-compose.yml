@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+
+  # PostgreSQL database container
+  postgres:
+    image: postgres:16-alpine        # alpine = lightweight version
+    container_name: smarttix_postgres
+    environment:
+      POSTGRES_DB: smarttix          # creates this database automatically
+      POSTGRES_USER: smarttix_user   # database username
+      POSTGRES_PASSWORD: smarttix_pass # database password
+    ports:
+      - "5433:5432"   # left = your Windows port, right = container port
+                      # means: when you connect to localhost:5432,
+                      # Docker routes it to PostgreSQL inside the container
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      # volumes = persistent storage
+      # without this, ALL your data disappears when container restarts
+
+  # Redis cache container
+  redis:
+    image: redis:7.2-alpine
+    container_name: smarttix_redis
+    ports:
+      - "6379:6379"   # Redis default port
+    command: redis-server --appendonly yes
+    # --appendonly yes = Redis saves data to disk
+    # without this, Redis data is lost on restart
+    volumes:
+      - redis_data:/data
+
+# Named volumes — Docker manages these on your machine
+volumes:
+  postgres_data:
+  redis_data:

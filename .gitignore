@@ -8,6 +8,8 @@ appsettings.Development.json
 .env
 *.env
 
+[Oo]bj/
+[Bb]in/
 # Docker volumes
 postgres_data/
 redis_data/
