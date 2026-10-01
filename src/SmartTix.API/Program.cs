@@ -28,11 +28,15 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // ── Dependency Injection ────────────────────────────────────
 // Repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IEventRepository, EventRepository>();
+builder.Services.AddScoped<ISeatRepository, SeatRepository>();
+
 
 // Services
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IEventService, EventService>();
 
 // ── JWT Authentication ──────────────────────────────────────
 var jwtSecret = builder.Configuration["Jwt:Secret"]
