@@ -22,7 +22,7 @@ public class EventRepository : IEventRepository
         // Start with base query — soft delete already filtered by global query filter
         var query = _context.Events
             .Include(e => e.SeatCategories)
-            .Include(e => e.Seats)
+            // .Include(e => e.Seats)
             .AsQueryable();
 
         // ── Filters ─────────────────────────────────────────
@@ -116,6 +116,14 @@ public class EventRepository : IEventRepository
 
     public async Task SaveChangesAsync()
     {
-        await _context.SaveChangesAsync();
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.ToString());
+            throw;
+        }
     }
 }
