@@ -25,6 +25,12 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     .EnableSensitiveDataLogging(builder.Environment.IsDevelopment())
     .EnableDetailedErrors(builder.Environment.IsDevelopment()));
 
+// Redis connection — singleton because one connection shared across all requests
+builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+    ConnectionMultiplexer.Connect(
+        builder.Configuration["Redis:ConnectionString"]
+        ?? throw new InvalidOperationException("Redis connection string not configured")));
+
 // ── Dependency Injection ────────────────────────────────────
 // Repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -32,6 +38,7 @@ builder.Services.AddScoped<IEventRepository, EventRepository>();
 builder.Services.AddScoped<ISeatRepository, SeatRepository>();
 
 
+builder.Services.AddScoped<IRedisService, RedisService>();
 // Services
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IJwtService, JwtService>();
