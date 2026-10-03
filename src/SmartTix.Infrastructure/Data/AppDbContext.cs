@@ -16,7 +16,7 @@ public class AppDbContext : DbContext
     public DbSet<BookingSeat> BookingSeats => Set<BookingSeat>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
-
+    public DbSet<Payment> Payments => Set<Payment>();
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
     {
         // All enums across ALL tables store as string automatically
@@ -44,5 +44,6 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<BookingSeat>().HasQueryFilter(bs => !bs.IsDeleted);
         modelBuilder.Entity<RefreshToken>().HasQueryFilter(rt => !rt.IsDeleted);
         modelBuilder.Entity<OutboxMessage>().HasQueryFilter(om => !om.IsDeleted);
+        modelBuilder.Entity<Payment>().HasQueryFilter(p => !p.IsDeleted);
     }
 }

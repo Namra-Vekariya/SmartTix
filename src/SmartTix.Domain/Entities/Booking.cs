@@ -23,4 +23,5 @@ public class Booking : BaseEntity
     public User User { get; set; } = null!;
     public Event Event { get; set; } = null!;
     public ICollection<BookingSeat> BookingSeats { get; set; } = new List<BookingSeat>();
+    public ICollection<Payment> Payments { get; set; } = new List<Payment>();
 }
