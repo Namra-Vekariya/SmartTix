@@ -28,6 +28,15 @@ namespace SmartTix.Infrastructure.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("BookerEmail")
+                        .HasColumnType("text");
+
+                    b.Property<string>("BookerName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("BookerPhone")
+                        .HasColumnType("text");
+
                     b.Property<string>("BookingReference")
                         .IsRequired()
                         .HasMaxLength(20)

@@ -12,7 +12,9 @@ public class Booking : BaseEntity
     public string? PaymentReference { get; set; }   // Mock payment ID
     public DateTime ExpiresAt { get; set; }         // CreatedAt + 10 minutes
     public string? HoldId { get; set; }             // Redis hold key reference
-
+    public string? BookerName { get; set; }
+    public string? BookerEmail { get; set; }
+    public string? BookerPhone { get; set; }
     // Foreign keys
     public Guid UserId { get; set; }
     public Guid EventId { get; set; }

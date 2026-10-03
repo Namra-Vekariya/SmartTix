@@ -3,15 +3,18 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using SmartTix.API.Middleware;
+using SmartTix.Application.Interfaces.Infrastructure;
 using SmartTix.Application.Interfaces.Repositories;
 using SmartTix.Application.Interfaces.Services;
 using SmartTix.Application.Services;
+using SmartTix.Infrastructure.Redis;
 using SmartTix.Infrastructure.Data;
 using SmartTix.Infrastructure.Repositories;
 using SmartTix.Infrastructure.Services;
 using System.Text;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Mvc;
+using StackExchange.Redis;
 using SmartTix.Application.Common;
 
 var builder = WebApplication.CreateBuilder(args);
