@@ -48,15 +48,21 @@ public class RedisService : IRedisService
     {
         var key = $"ratelimit:book:{userId}";
 
-        // Increment counter for this user
-        var count = await _db.StringIncrementAsync(key);
+        var script = @"
+        local count = redis.call('INCR', KEYS[1])
+        if count == 1 then
+            redis.call('EXPIRE', KEYS[1], ARGV[1])
+        end
+        return count";
 
-        // First request — set expiry window
-        // After windowSeconds, counter resets automatically
-        if (count == 1)
-            await _db.KeyExpireAsync(key, TimeSpan.FromSeconds(windowSeconds));
+        var result = await _db.ScriptEvaluateAsync(
+            script,
+            keys: new RedisKey[] { key },
+            values: new RedisValue[] { windowSeconds });
 
-        // True = allowed, False = limit exceeded
+        var count = (int)result;
+        Console.WriteLine($"[RateLimit] UserId: {userId} | Count: {count} | Allowed: {count <= maxRequests}");
+
         return count <= maxRequests;
     }
 
