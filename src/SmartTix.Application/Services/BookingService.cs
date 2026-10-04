@@ -13,17 +13,20 @@ public class BookingService : IBookingService
     private readonly ISeatRepository _seatRepository;
     private readonly IEventRepository _eventRepository;
     private readonly IRedisService _redisService;
+    private readonly IUserRepository _userRepository;
 
     public BookingService(
         IBookingRepository bookingRepository,
         ISeatRepository seatRepository,
         IEventRepository eventRepository,
+        IUserRepository userRepository,
         IRedisService redisService)
     {
         _bookingRepository = bookingRepository;
         _seatRepository = seatRepository;
         _eventRepository = eventRepository;
         _redisService = redisService;
+        _userRepository = userRepository;
     }
 
     public async Task<HoldSeatsResponse> HoldSeatsAsync(
@@ -35,6 +38,15 @@ public class BookingService : IBookingService
         if (!allowed)
             throw new InvalidOperationException(
                 "Too many booking attempts. Please wait a minute before trying again.");
+
+        // ── Step 1.5: Validate user is not an admin ────────────
+        var user = await _userRepository.GetByIdAsync(userId);
+        if (user is null)
+            throw new UnauthorizedAccessException("User not found");
+
+        if (user.Role == Domain.Enums.UserRole.Admin)
+            throw new InvalidOperationException(
+                "Admin accounts cannot book tickets. Please use a customer account.");
 
         // ── Step 2: Validate event exists and is bookable ────
         var eventEntity = await _eventRepository.GetByIdWithCategoriesAsync(request.EventId);
