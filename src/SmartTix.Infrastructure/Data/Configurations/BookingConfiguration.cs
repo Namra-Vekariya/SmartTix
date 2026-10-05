@@ -41,6 +41,10 @@ public class BookingConfiguration : IEntityTypeConfiguration<Booking>
         // Fast lookup for user's booking history
         builder.HasIndex(b => new { b.UserId, b.Status });
 
+        // Covering index for the hold-expiry sweep:
+        // WHERE Status = 'Pending' AND ExpiresAt < now() runs every few seconds
+        builder.HasIndex(b => new { b.Status, b.ExpiresAt });
+
         // One booking has many seats
         builder.HasMany(b => b.BookingSeats)
             .WithOne(bs => bs.Booking)

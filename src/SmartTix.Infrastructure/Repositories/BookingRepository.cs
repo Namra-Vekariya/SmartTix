@@ -52,14 +52,54 @@ public class BookingRepository : IBookingRepository
             .ToListAsync();
     }
 
-    public async Task<List<Booking>> GetExpiredHoldsAsync()
+    public async Task<List<Booking>> GetExpiredHoldsAsync(int limit)
     {
         return await _context.Bookings
             .Include(b => b.BookingSeats)
+                .ThenInclude(bs => bs.Seat)
             .Where(b =>
                 b.Status == BookingStatus.Pending &&
                 b.ExpiresAt < DateTime.UtcNow)
+            .OrderBy(b => b.ExpiresAt)
+            .Take(limit)
             .ToListAsync();
+    }
+
+    public async Task<bool> TryExpireBookingAsync(Guid bookingId, DateTime utcNow)
+    {
+        // Atomic compare-and-swap inside one transaction:
+        // 1. Flip Pending → Expired only if still Pending and past ExpiresAt.
+        //    If confirm/cancel won the race, rows affected = 0 → nothing changes.
+        // 2. Free only this booking's seats, and only while they are still Held —
+        //    a seat that got re-held by another user is left alone.
+        await using var transaction = await _context.Database.BeginTransactionAsync();
+
+        var claimed = await _context.Bookings
+            .Where(b =>
+                b.Id == bookingId &&
+                b.Status == BookingStatus.Pending &&
+                b.ExpiresAt < utcNow)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(b => b.Status, BookingStatus.Expired)
+                .SetProperty(b => b.UpdatedAt, utcNow));
+
+        if (claimed == 0)
+        {
+            await transaction.RollbackAsync();
+            return false;
+        }
+
+        await _context.Seats
+            .Where(s =>
+                _context.BookingSeats
+                    .Any(bs => bs.BookingId == bookingId && bs.SeatId == s.Id) &&
+                s.Status == SeatStatus.Held)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(x => x.Status, SeatStatus.Available)
+                .SetProperty(x => x.UpdatedAt, utcNow));
+
+        await transaction.CommitAsync();
+        return true;
     }
 
     public async Task AddAsync(Booking booking)

@@ -91,6 +91,8 @@ namespace SmartTix.Infrastructure.Data.Migrations
 
                     b.HasIndex("EventId");
 
+                    b.HasIndex("Status", "ExpiresAt");
+
                     b.HasIndex("UserId", "Status");
 
                     b.ToTable("bookings", (string)null);

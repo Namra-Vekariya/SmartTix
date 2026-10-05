@@ -3,11 +3,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 using SmartTix.API.Middleware;
+using SmartTix.API.Hubs;
+using SmartTix.API.SignalR;
 using SmartTix.Application.Interfaces.Infrastructure;
 using SmartTix.Application.Interfaces.Repositories;
 using SmartTix.Application.Interfaces.Services;
 using SmartTix.Application.Services;
 using SmartTix.Infrastructure.Redis;
+using SmartTix.Infrastructure.BackgroundJobs;
 using SmartTix.Infrastructure.Data;
 using SmartTix.Infrastructure.Repositories;
 using SmartTix.Infrastructure.Services;
@@ -40,14 +43,19 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IEventRepository, EventRepository>();
 builder.Services.AddScoped<ISeatRepository, SeatRepository>();
 builder.Services.AddScoped<IBookingRepository, BookingRepository>();
-
 builder.Services.AddScoped<IRedisService, RedisService>();
+// IHubContext needs the ASP.NET framework; Application only sees the ISeatNotifier port
+builder.Services.AddSingleton<ISeatNotifier, SeatNotifier>();
+
 // Services
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IEventService, EventService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
+
+// Background workers
+builder.Services.AddHostedService<HoldExpiryWorker>();
 
 // ── JWT Authentication ──────────────────────────────────────
 var jwtSecret = builder.Configuration["Jwt:Secret"]
@@ -110,6 +118,9 @@ builder.Services.AddControllers()
 // ── OpenAPI / Scalar ────────────────────────────────────────
 builder.Services.AddOpenApi();
 
+// ── SignalR ─────────────────────────────────────────────────
+builder.Services.AddSignalR();
+
 // CORS 
 builder.Services.AddCors(options =>
 {
@@ -142,5 +153,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<SeatsHub>("/hubs/seats");
 
 app.Run();

@@ -1,4 +1,5 @@
 using SmartTix.Application.DTOs.Bookings;
+using SmartTix.Application.DTOs.Seats;
 using SmartTix.Application.Interfaces.Infrastructure;
 using SmartTix.Application.Interfaces.Repositories;
 using SmartTix.Application.Interfaces.Services;
@@ -14,19 +15,22 @@ public class BookingService : IBookingService
     private readonly IEventRepository _eventRepository;
     private readonly IRedisService _redisService;
     private readonly IUserRepository _userRepository;
+    private readonly ISeatNotifier _seatNotifier;
 
     public BookingService(
         IBookingRepository bookingRepository,
         ISeatRepository seatRepository,
         IEventRepository eventRepository,
         IUserRepository userRepository,
-        IRedisService redisService)
+        IRedisService redisService,
+        ISeatNotifier seatNotifier)
     {
         _bookingRepository = bookingRepository;
         _seatRepository = seatRepository;
         _eventRepository = eventRepository;
-        _redisService = redisService;
         _userRepository = userRepository;
+        _redisService = redisService;
+        _seatNotifier = seatNotifier;
     }
 
     public async Task<HoldSeatsResponse> HoldSeatsAsync(
@@ -84,6 +88,9 @@ public class BookingService : IBookingService
         // Track which seats we successfully locked
         // If any seat fails, we must release all previously acquired locks
         var lockedSeatIds = new List<Guid>();
+        var holdId = Guid.NewGuid().ToString();
+        var totalAmount = requestedSeats.Sum(s => s.SeatCategory.Price);
+        Booking booking;
 
         try
         {
@@ -97,7 +104,6 @@ public class BookingService : IBookingService
                 if (!lockAcquired)
                 {
                     // This seat was taken by someone else between our check and lock
-                    // Release all locks we already acquired — partial holds not allowed
                     throw new InvalidOperationException(
                         $"Seat {seat.SeatCode} was just taken by another user. " +
                         $"Please select a different seat.");
@@ -105,39 +111,62 @@ public class BookingService : IBookingService
 
                 lockedSeatIds.Add(seat.Id);
             }
+
+            // ── Step 6: Create pending booking in PostgreSQL ─────
+            // Seats are marked Held in the same transaction as the booking so
+            // the REST seat map and availability counts reflect the hold for
+            // users who load the page later. Redis locks are released if the
+            // database write fails — otherwise seats would stay locked for the
+            // full TTL with no booking record.
+            foreach (var seat in requestedSeats)
+            {
+                seat.Status = SeatStatus.Held;
+                seat.UpdatedAt = DateTime.UtcNow;
+            }
+
+            booking = new Booking
+            {
+                BookingReference = GenerateBookingReference(),
+                UserId = userId,
+                EventId = request.EventId,
+                Status = BookingStatus.Pending,
+                TotalAmount = totalAmount,
+                PaymentStatus = PaymentStatus.Pending,
+                HoldId = holdId,
+                ExpiresAt = DateTime.UtcNow.AddMinutes(10),
+                BookingSeats = requestedSeats.Select(s => new BookingSeat
+                {
+                    SeatId = s.Id,
+                    PriceAtBooking = s.SeatCategory.Price
+                }).ToList()
+            };
+
+            await _bookingRepository.AddAsync(booking);
+            await _bookingRepository.SaveChangesAsync();
         }
         catch
         {
-            // Release all successfully acquired locks before re-throwing
+            // Release every lock we hold before re-throwing.
+            // Safe even if no locks were acquired (key deletion is idempotent).
             foreach (var seatId in lockedSeatIds)
                 await _redisService.ReleaseSeatLockAsync(request.EventId, seatId);
+
+            // The failed SaveChangesAsync rolled back the transaction, but the
+            // tracked seat entities still carry Held — restore them so this
+            // DbContext cannot persist a stale hold later.
+            foreach (var seat in requestedSeats)
+                seat.Status = SeatStatus.Available;
 
             throw;
         }
 
-        // ── Step 6: Create pending booking in PostgreSQL ─────
-        var holdId = Guid.NewGuid().ToString();
-        var totalAmount = requestedSeats.Sum(s => s.SeatCategory.Price);
-
-        var booking = new Booking
-        {
-            BookingReference = GenerateBookingReference(),
-            UserId = userId,
-            EventId = request.EventId,
-            Status = BookingStatus.Pending,
-            TotalAmount = totalAmount,
-            PaymentStatus = PaymentStatus.Pending,
-            HoldId = holdId,
-            ExpiresAt = DateTime.UtcNow.AddMinutes(10),
-            BookingSeats = requestedSeats.Select(s => new BookingSeat
-            {
-                SeatId = s.Id,
-                PriceAtBooking = s.SeatCategory.Price
-            }).ToList()
-        };
-
-        await _bookingRepository.AddAsync(booking);
-        await _bookingRepository.SaveChangesAsync();
+        // Broadcast only after the commit — live clients must never see a state
+        // the database does not have. Notifier is best-effort (never throws).
+        await _seatNotifier.NotifySeatsChangedAsync(BuildSeatChange(
+            request.EventId,
+            SeatStatus.Held,
+            "held",
+            requestedSeats));
 
         // ── Step 7: Return hold response ─────────────────────
         return new HoldSeatsResponse
@@ -191,11 +220,19 @@ public class BookingService : IBookingService
 
         if (!paymentSucceeded)
         {
-            // Payment failed — release locks, mark booking failed
+            // Payment failed — release locks, free seats, mark booking failed
             await ReleaseBookingLocksAsync(booking);
             booking.Status = BookingStatus.Cancelled;
             booking.PaymentStatus = PaymentStatus.Failed;
+            ReleaseHeldSeats(booking);
+
             await _bookingRepository.SaveChangesAsync();
+
+            await _seatNotifier.NotifySeatsChangedAsync(BuildSeatChange(
+                booking.EventId,
+                SeatStatus.Available,
+                "payment_failed",
+                booking.BookingSeats.Select(bs => bs.Seat)));
 
             throw new InvalidOperationException(
                 "Payment failed. Please try again with a different card.");
@@ -221,6 +258,17 @@ public class BookingService : IBookingService
         booking.BookerPhone = request.Phone;
 
         await _bookingRepository.SaveChangesAsync();
+
+        // Seats are Booked in PostgreSQL now — the Redis hold keys have served
+        // their purpose. Delete them instead of waiting for the TTL so the
+        // seats are immediately re-holdable if this booking is later refunded.
+        await ReleaseBookingLocksAsync(booking);
+
+        await _seatNotifier.NotifySeatsChangedAsync(BuildSeatChange(
+            booking.EventId,
+            SeatStatus.Booked,
+            "confirmed",
+            booking.BookingSeats.Select(bs => bs.Seat)));
 
         return MapToBookingDetailDto(booking);
     }
@@ -260,6 +308,10 @@ public class BookingService : IBookingService
         if (booking.Status == BookingStatus.Cancelled)
             throw new InvalidOperationException("Booking is already cancelled");
 
+        if (booking.Status == BookingStatus.Expired)
+            throw new InvalidOperationException(
+                "This hold has already expired. The seats have been released.");
+
         if (booking.Status == BookingStatus.Confirmed)
             throw new InvalidOperationException(
                 "Confirmed bookings cannot be cancelled directly. Contact support for refunds.");
@@ -272,16 +324,51 @@ public class BookingService : IBookingService
         booking.UpdatedAt = DateTime.UtcNow;
 
         // Free up seats back to available
-        foreach (var bookingSeat in booking.BookingSeats)
-        {
-            bookingSeat.Seat.Status = SeatStatus.Available;
-            bookingSeat.Seat.UpdatedAt = DateTime.UtcNow;
-        }
+        ReleaseHeldSeats(booking);
 
         await _bookingRepository.SaveChangesAsync();
+
+        await _seatNotifier.NotifySeatsChangedAsync(BuildSeatChange(
+            booking.EventId,
+            SeatStatus.Available,
+            "cancelled",
+            booking.BookingSeats.Select(bs => bs.Seat)));
     }
 
     // ── Private helpers ──────────────────────────────────────
+
+    private static SeatsChangedEvent BuildSeatChange(
+        Guid eventId,
+        SeatStatus newStatus,
+        string reason,
+        IEnumerable<Seat> seats)
+    {
+        return new SeatsChangedEvent
+        {
+            EventId = eventId,
+            Status = newStatus.ToString(),
+            Reason = reason,
+            Seats = seats.Select(s => new ChangedSeatDto
+            {
+                SeatId = s.Id,
+                SeatCode = s.SeatCode
+            }).ToList()
+        };
+    }
+
+    private static void ReleaseHeldSeats(Booking booking)
+    {
+        // Only seats this booking is actually holding may be freed —
+        // a Blocked seat (admin) or an already-Booked seat must survive.
+        foreach (var bookingSeat in booking.BookingSeats)
+        {
+            if (bookingSeat.Seat.Status != SeatStatus.Held)
+                continue;
+
+            bookingSeat.Seat.Status = SeatStatus.Available;
+            bookingSeat.Seat.UpdatedAt = DateTime.UtcNow;
+        }
+    }
 
     private async Task ReleaseBookingLocksAsync(Booking booking)
     {
