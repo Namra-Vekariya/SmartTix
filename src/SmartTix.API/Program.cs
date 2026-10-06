@@ -19,6 +19,7 @@ using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Mvc;
 using StackExchange.Redis;
 using SmartTix.Application.Common;
+using SmartTix.Application.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,6 +39,13 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
         ?? throw new InvalidOperationException("Redis connection string not configured")));
 
 // ── Dependency Injection ────────────────────────────────────
+// Options — validated on start so a bad SMTP config fails fast at boot
+builder.Services
+    .AddOptions<EmailOptions>()
+    .Bind(builder.Configuration.GetSection(EmailOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
 // Repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IEventRepository, EventRepository>();
@@ -53,6 +61,7 @@ builder.Services.AddScoped<IJwtService, JwtService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IEventService, EventService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 // Background workers
 builder.Services.AddHostedService<HoldExpiryWorker>();
