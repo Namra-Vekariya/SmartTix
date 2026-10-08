@@ -16,6 +16,7 @@ public class BookingService : IBookingService
     private readonly IRedisService _redisService;
     private readonly IUserRepository _userRepository;
     private readonly ISeatNotifier _seatNotifier;
+    private readonly IEmailService _emailService;
 
     public BookingService(
         IBookingRepository bookingRepository,
@@ -23,6 +24,7 @@ public class BookingService : IBookingService
         IEventRepository eventRepository,
         IUserRepository userRepository,
         IRedisService redisService,
+        IEmailService emailService,
         ISeatNotifier seatNotifier)
     {
         _bookingRepository = bookingRepository;
@@ -30,6 +32,7 @@ public class BookingService : IBookingService
         _eventRepository = eventRepository;
         _userRepository = userRepository;
         _redisService = redisService;
+        _emailService = emailService;
         _seatNotifier = seatNotifier;
     }
 
@@ -220,22 +223,13 @@ public class BookingService : IBookingService
 
         if (!paymentSucceeded)
         {
-            // Payment failed — release locks, free seats, mark booking failed
-            await ReleaseBookingLocksAsync(booking);
-            booking.Status = BookingStatus.Cancelled;
             booking.PaymentStatus = PaymentStatus.Failed;
-            ReleaseHeldSeats(booking);
+            booking.UpdatedAt = DateTime.UtcNow;
 
             await _bookingRepository.SaveChangesAsync();
 
-            await _seatNotifier.NotifySeatsChangedAsync(BuildSeatChange(
-                booking.EventId,
-                SeatStatus.Available,
-                "payment_failed",
-                booking.BookingSeats.Select(bs => bs.Seat)));
-
             throw new InvalidOperationException(
-                "Payment failed. Please try again with a different card.");
+                "Payment failed. Your seats are still held — please try again.");
         }
 
         // ── Step 6: Confirm booking ──────────────────────────
@@ -258,6 +252,19 @@ public class BookingService : IBookingService
         booking.BookerPhone = request.Phone;
 
         await _bookingRepository.SaveChangesAsync();
+
+        // Seats are Booked in PostgreSQL now — the Redis hold keys have served
+        // their purpose. Delete them instead of waiting for the TTL so the
+        // seats are immediately re-holdable if this booking is later refunded.
+        await ReleaseBookingLocksAsync(booking);
+
+        await _emailService.SendEmailAsync(
+            recipientEmail: booking.BookerEmail,
+            subject: $"Booking Confirmed — {booking.BookingReference}",
+            body: BuildBookingConfirmationEmail(booking),
+            isHtml: true
+            // cancellationToken: cancellationToken
+        );
 
         // Seats are Booked in PostgreSQL now — the Redis hold keys have served
         // their purpose. Delete them instead of waiting for the TTL so the
@@ -428,4 +435,56 @@ public class BookingService : IBookingService
             }).ToList()
         };
     }
+
+    private static string BuildBookingConfirmationEmail(Booking booking)
+    {
+        var seats = string.Join(", ", 
+            booking.BookingSeats.Select(bs => bs.Seat.SeatCode));
+
+        return $"""
+            <!DOCTYPE html>
+            <html>
+            <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+                
+                <div style="background: #6c63ff; padding: 24px; border-radius: 8px; text-align: center;">
+                    <h1 style="color: white; margin: 0;">🎵 SmartTix</h1>
+                    <p style="color: #e0e0ff; margin: 8px 0 0;">Your booking is confirmed!</p>
+                </div>
+
+                <div style="padding: 24px 0;">
+                    <h2 style="color: #333;">Booking Confirmation</h2>
+                    
+                    <div style="background: #f5f5f5; padding: 16px; border-radius: 8px; margin: 16px 0;">
+                        <p style="margin: 4px 0;"><strong>Reference:</strong> {booking.BookingReference}</p>
+                        <p style="margin: 4px 0;"><strong>Event:</strong> {booking.Event.Name}</p>
+                        <p style="margin: 4px 0;"><strong>Artist:</strong> {booking.Event.ArtistName}</p>
+                        <p style="margin: 4px 0;"><strong>Venue:</strong> {booking.Event.VenueName}, {booking.Event.VenueCity}</p>
+                        <p style="margin: 4px 0;"><strong>Date:</strong> {booking.Event.EventDate:dddd, MMMM dd yyyy 'at' hh:mm tt} UTC</p>
+                        <p style="margin: 4px 0;"><strong>Seats:</strong> {seats}</p>
+                        <p style="margin: 4px 0;"><strong>Total Paid:</strong> ₹{booking.TotalAmount:N0}</p>
+                    </div>
+
+                    <p style="color: #666;">
+                        Your PDF ticket is attached. Please bring it to the venue — 
+                        either printed or on your phone.
+                    </p>
+
+                    <div style="background: #fff3cd; padding: 12px; border-radius: 8px; border-left: 4px solid #ffc107;">
+                        <p style="margin: 0; color: #856404;">
+                            <strong>Important:</strong> Doors open at {booking.Event.DoorsOpenTime:hh:mm tt} UTC. 
+                            Please arrive 30 minutes early.
+                        </p>
+                    </div>
+                </div>
+
+                <div style="border-top: 1px solid #eee; padding-top: 16px; color: #999; font-size: 12px;">
+                    <p>SmartTix — AI-Powered Concert Ticketing</p>
+                    <p>This is an automated email. Please do not reply.</p>
+                </div>
+
+            </body>
+            </html>
+            """;
+    }
+
 }
