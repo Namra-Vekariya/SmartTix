@@ -46,6 +46,13 @@ builder.Services
     .ValidateDataAnnotations()
     .ValidateOnStart();
 
+// AI options — missing Gemini key fails fast at boot, not on first request
+builder.Services
+    .AddOptions<AiOptions>()
+    .Bind(builder.Configuration.GetSection(AiOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+
 // Repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IEventRepository, EventRepository>();
@@ -62,6 +69,11 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IEventService, EventService>();
 builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IAiRecommendService, AiRecommendService>();
+
+// Typed HttpClient for the Gemini client — timeout + API key header
+// live on the HttpClient, config comes from AiOptions
+builder.Services.AddHttpClient<IAiLlmClient, GeminiLlmClient>();
 
 // Background workers
 builder.Services.AddHostedService<HoldExpiryWorker>();
@@ -104,6 +116,17 @@ builder.Services.AddRateLimiter(options =>
     options.OnRejected = async (context, ct) =>
         await context.HttpContext.Response.WriteAsJsonAsync(
             ApiResponse<object>.Fail("Too many requests. Please try again later."), ct);
+
+    // LLM calls cost money — tighter window than the auth policy
+    options.AddPolicy("ai", httpContext =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1),
+                QueueLimit = 0
+            }));
 });
 
 builder.Services.AddAuthorization();

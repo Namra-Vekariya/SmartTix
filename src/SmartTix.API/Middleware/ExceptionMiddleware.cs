@@ -46,6 +46,9 @@ public class ExceptionMiddleware
             // Business rule violations — 400 Bad Request
             InvalidOperationException => (HttpStatusCode.BadRequest, exception.Message),
 
+            // Upstream LLM provider failed — 503, the request itself was valid
+            AiServiceUnavailableException => (HttpStatusCode.ServiceUnavailable, exception.Message),
+
             // Auth failures — 401 Unauthorized
             UnauthorizedAccessException => (HttpStatusCode.Unauthorized, exception.Message),
 
