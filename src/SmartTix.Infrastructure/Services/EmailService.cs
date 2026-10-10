@@ -28,6 +28,63 @@ public sealed class EmailService : IEmailService
         bool isHtml = true,
         CancellationToken cancellationToken = default)
     {
+        ValidateMessage(recipientEmail, subject, body);
+
+        var message = CreateMessage(recipientEmail, subject);
+
+        message.Body = new BodyBuilder
+        {
+            HtmlBody = isHtml ? body : null,
+            TextBody = isHtml ? null : body
+        }.ToMessageBody();
+
+        await DeliverAsync(message, recipientEmail, cancellationToken);
+    }
+
+    public async Task SendEmailWithAttachmentAsync(
+        string recipientEmail,
+        string subject,
+        string body,
+        byte[] attachmentBytes,
+        string attachmentName,
+        bool isHtml = true,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateMessage(recipientEmail, subject, body);
+
+        if (attachmentBytes is null || attachmentBytes.Length == 0)
+            throw new ArgumentException(
+                "Attachment content is required.",
+                nameof(attachmentBytes));
+
+        if (string.IsNullOrWhiteSpace(attachmentName))
+            throw new ArgumentException(
+                "Attachment name is required.",
+                nameof(attachmentName));
+
+        var message = CreateMessage(recipientEmail, subject);
+
+        var bodyBuilder = new BodyBuilder
+        {
+            HtmlBody = isHtml ? body : null,
+            TextBody = isHtml ? null : body
+        };
+
+        bodyBuilder.Attachments.Add(
+            attachmentName,
+            attachmentBytes,
+            new ContentType("application", "pdf"));
+
+        message.Body = bodyBuilder.ToMessageBody();
+
+        await DeliverAsync(message, recipientEmail, cancellationToken);
+    }
+
+    private static void ValidateMessage(
+        string recipientEmail,
+        string subject,
+        string body)
+    {
         if (string.IsNullOrWhiteSpace(recipientEmail))
             throw new ArgumentException(
                 "Recipient email is required.",
@@ -42,7 +99,10 @@ public sealed class EmailService : IEmailService
             throw new ArgumentException(
                 "Email body is required.",
                 nameof(body));
+    }
 
+    private MimeMessage CreateMessage(string recipientEmail, string subject)
+    {
         var message = new MimeMessage();
 
         message.From.Add(
@@ -55,12 +115,14 @@ public sealed class EmailService : IEmailService
 
         message.Subject = subject;
 
-        message.Body = new BodyBuilder
-        {
-            HtmlBody = isHtml ? body : null,
-            TextBody = isHtml ? null : body
-        }.ToMessageBody();
+        return message;
+    }
 
+    private async Task DeliverAsync(
+        MimeMessage message,
+        string recipientEmail,
+        CancellationToken cancellationToken)
+    {
         try
         {
             using var smtpClient = new SmtpClient();
@@ -87,7 +149,7 @@ public sealed class EmailService : IEmailService
             _logger.LogInformation(
                 "Email sent successfully to {RecipientEmail}. Subject: {Subject}",
                 recipientEmail,
-                subject);
+                message.Subject);
         }
         catch (Exception ex)
         {
@@ -95,7 +157,7 @@ public sealed class EmailService : IEmailService
                 ex,
                 "Failed to send email to {RecipientEmail}. Subject: {Subject}",
                 recipientEmail,
-                subject);
+                message.Subject);
 
             throw;
         }

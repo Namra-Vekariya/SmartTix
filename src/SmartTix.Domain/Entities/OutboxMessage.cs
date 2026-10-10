@@ -5,6 +5,8 @@ namespace SmartTix.Domain.Entities;
 
 public class OutboxMessage : BaseEntity
 {
+    public const string BookingConfirmedEvent = "BookingConfirmed";
+
     public string EventType { get; set; } = string.Empty;   // "BookingConfirmed", "BookingCancelled"
     public string Payload { get; set; } = string.Empty;     // JSON string
     public OutboxMessageStatus Status { get; set; } = OutboxMessageStatus.Pending;
