@@ -51,6 +51,14 @@ public class BookingsController : ControllerBase
         return Ok(ApiResponse<BookingDetailDto>.Ok(result, "Booking retrieved successfully"));
     }
 
+    [HttpGet("{id:guid}/ticket")]
+    public async Task<IActionResult> DownloadTicket(Guid id)
+    {
+        var userId = GetUserIdFromClaims();
+        var pdfBytes = await _bookingService.GetTicketPdfAsync(id, userId);
+        return File(pdfBytes, "application/pdf", $"ticket-{id}.pdf");
+    }
+
     [HttpPut("{id:guid}/cancel")]
     public async Task<IActionResult> CancelBooking(Guid id)
     {

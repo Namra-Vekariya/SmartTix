@@ -18,6 +18,7 @@ public class BookingService : IBookingService
     private readonly IUserRepository _userRepository;
     private readonly ISeatNotifier _seatNotifier;
     private readonly IOutboxRepository _outboxRepository;
+    private readonly ITicketPdfService _ticketPdfService;
 
     public BookingService(
         IBookingRepository bookingRepository,
@@ -26,7 +27,8 @@ public class BookingService : IBookingService
         IUserRepository userRepository,
         IRedisService redisService,
         IOutboxRepository outboxRepository,
-        ISeatNotifier seatNotifier)
+        ISeatNotifier seatNotifier,
+        ITicketPdfService ticketPdfService)
     {
         _bookingRepository = bookingRepository;
         _seatRepository = seatRepository;
@@ -35,6 +37,7 @@ public class BookingService : IBookingService
         _redisService = redisService;
         _outboxRepository = outboxRepository;
         _seatNotifier = seatNotifier;
+        _ticketPdfService = ticketPdfService;
     }
 
     public async Task<HoldSeatsResponse> HoldSeatsAsync(
@@ -292,6 +295,28 @@ public class BookingService : IBookingService
                 "You are not authorized to view this booking");
 
         return MapToBookingDetailDto(booking);
+    }
+
+    public async Task<byte[]> GetTicketPdfAsync(Guid bookingId, Guid userId)
+    {
+        var booking = await _bookingRepository.GetByIdWithDetailsAsync(bookingId);
+
+        if (booking is null)
+            throw new KeyNotFoundException("Booking not found");
+
+        // Security check — user can only download their own tickets
+        if (booking.UserId != userId)
+            throw new UnauthorizedAccessException(
+                "You are not authorized to download this ticket");
+
+        // Tickets exist only for confirmed bookings — Pending holds and
+        // Expired bookings are rejected as bad requests (mapped to 400
+        // by the exception middleware).
+        if (booking.Status != BookingStatus.Confirmed)
+            throw new InvalidOperationException(
+                $"A ticket is only available for confirmed bookings. This booking is {booking.Status}.");
+
+        return _ticketPdfService.GenerateTicketPdf(booking);
     }
 
     public async Task<List<BookingDetailDto>> GetUserBookingsAsync(Guid userId)
