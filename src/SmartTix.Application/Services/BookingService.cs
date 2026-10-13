@@ -238,6 +238,7 @@ public class BookingService : IBookingService
 
         // ── Step 6: Confirm booking ──────────────────────────
         booking.Status = BookingStatus.Confirmed;
+        booking.ConfirmedAt = DateTime.UtcNow;
         booking.PaymentStatus = PaymentStatus.Paid;
         booking.PaymentReference = $"MOCK-{Guid.NewGuid().ToString()[..8].ToUpper()}";
         booking.UpdatedAt = DateTime.UtcNow;

@@ -61,6 +61,7 @@ builder.Services.AddScoped<IEventRepository, EventRepository>();
 builder.Services.AddScoped<ISeatRepository, SeatRepository>();
 builder.Services.AddScoped<IBookingRepository, BookingRepository>();
 builder.Services.AddScoped<IOutboxRepository, OutboxRepository>();
+builder.Services.AddScoped<IDashboardRepository, DashboardRepository>();
 builder.Services.AddScoped<IRedisService, RedisService>();
 // IHubContext needs the ASP.NET framework; Application only sees the ISeatNotifier port
 builder.Services.AddSingleton<ISeatNotifier, SeatNotifier>();
@@ -74,9 +75,8 @@ builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<ITicketPdfService, TicketPdfService>();
 builder.Services.AddScoped<IAiRecommendService, AiRecommendService>();
+builder.Services.AddScoped<IAdminService, AdminService>();
 
-// Typed HttpClient for the Gemini client — timeout + API key header
-// live on the HttpClient, config comes from AiOptions
 builder.Services.AddHttpClient<IAiLlmClient, GeminiLlmClient>();
 
 // Background workers

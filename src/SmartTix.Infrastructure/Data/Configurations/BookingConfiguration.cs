@@ -45,6 +45,10 @@ public class BookingConfiguration : IEntityTypeConfiguration<Booking>
         // WHERE Status = 'Pending' AND ExpiresAt < now() runs every few seconds
         builder.HasIndex(b => new { b.Status, b.ExpiresAt });
 
+        // Dashboard: "bookings/revenue today" filters on
+        // WHERE Status = 'Confirmed' AND ConfirmedAt >= dayStart
+        builder.HasIndex(b => new { b.Status, b.ConfirmedAt });
+
         // One booking has many seats
         builder.HasMany(b => b.BookingSeats)
             .WithOne(bs => bs.Booking)

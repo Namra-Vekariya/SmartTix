@@ -11,6 +11,7 @@ public class Booking : BaseEntity
     public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Pending;
     public string? PaymentReference { get; set; }   // Mock payment ID
     public DateTime ExpiresAt { get; set; }         // CreatedAt + 10 minutes
+    public DateTime? ConfirmedAt { get; set; }       // Set when Status becomes Confirmed
     public string? HoldId { get; set; }             // Redis hold key reference
     public string? BookerName { get; set; }
     public string? BookerEmail { get; set; }

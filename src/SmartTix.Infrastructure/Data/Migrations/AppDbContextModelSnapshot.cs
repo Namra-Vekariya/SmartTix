@@ -47,6 +47,10 @@ namespace SmartTix.Infrastructure.Data.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("booking_reference");
 
+                    b.Property<DateTime?>("ConfirmedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("confirmed_at");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -110,6 +114,9 @@ namespace SmartTix.Infrastructure.Data.Migrations
 
                     b.HasIndex("EventId")
                         .HasDatabaseName("ix_bookings_event_id");
+
+                    b.HasIndex("Status", "ConfirmedAt")
+                        .HasDatabaseName("ix_bookings_status_confirmed_at");
 
                     b.HasIndex("Status", "ExpiresAt")
                         .HasDatabaseName("ix_bookings_status_expires_at");
