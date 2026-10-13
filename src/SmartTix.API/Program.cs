@@ -30,6 +30,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection"))
+    .UseSnakeCaseNamingConvention()
     .EnableSensitiveDataLogging(builder.Environment.IsDevelopment())
     .EnableDetailedErrors(builder.Environment.IsDevelopment()));
 
@@ -151,6 +152,19 @@ builder.Services.AddControllers()
         };
     });
 
+// ── Health checks ───────────────────────────────────────────
+// GET /health → Healthy (200) / Unhealthy (503). Used by Railway
+// deploy checks. No UI, no auth — just a lightweight probe.
+builder.Services.AddHealthChecks()
+    .AddNpgSql(
+        builder.Configuration.GetConnectionString("DefaultConnection")
+            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not configured"),
+        name: "postgresql")
+    .AddRedis(
+        builder.Configuration["Redis:ConnectionString"]
+            ?? throw new InvalidOperationException("Redis connection string not configured"),
+        name: "redis");
+
 // ── OpenAPI / Scalar ────────────────────────────────────────
 builder.Services.AddOpenApi();
 
@@ -191,6 +205,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHealthChecks("/health");
 app.MapHub<SeatsHub>("/hubs/seats");
 
 app.Run();
