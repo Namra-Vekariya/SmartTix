@@ -1,7 +1,7 @@
 # Angular
-frontend/smarttix-angular/node_modules/
-frontend/smarttix-angular/dist/
-frontend/smarttix-angular/.angular/
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
 
 # Environment secrets — never commit these
 appsettings.Development.json
