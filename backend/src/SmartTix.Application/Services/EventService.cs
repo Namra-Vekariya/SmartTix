@@ -53,6 +53,11 @@ public class EventService : IEventService
         };
     }
 
+    public async Task<EventFacetsDto> GetFacetsAsync()
+    {
+        return await _eventRepository.GetFacetsAsync();
+    }
+
     public async Task<EventDetailDto> GetByIdAsync(Guid id)
     {
         var eventEntity = await _eventRepository.GetByIdWithCategoriesAsync(id);

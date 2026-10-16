@@ -19,10 +19,10 @@ public class EventRepository : IEventRepository
 
     public async Task<PagedResult<Event>> GetAllAsync(EventQueryParams queryParams)
     {
-        // Start with base query — soft delete already filtered by global query filter
         var query = _context.Events
             .Include(e => e.SeatCategories)
-            // .Include(e => e.Seats)
+            .Include(e => e.Seats)
+            .AsSplitQuery()
             .AsQueryable();
 
         // ── Filters ─────────────────────────────────────────
@@ -92,6 +92,32 @@ public class EventRepository : IEventRepository
             TotalCount = totalCount,
             Page = queryParams.Page,
             PageSize = queryParams.PageSize
+        };
+    }
+
+    public async Task<EventFacetsDto> GetFacetsAsync()
+    {
+        var visibleEvents = _context.Events
+            .Where(e => e.Status == EventStatus.Published ||
+                        e.Status == EventStatus.Ongoing);
+
+        var genres = await visibleEvents
+            .Where(e => e.Genre != null && e.Genre != "")
+            .Select(e => e.Genre!)
+            .Distinct()
+            .OrderBy(g => g)
+            .ToListAsync();
+
+        var cities = await visibleEvents
+            .Select(e => e.VenueCity)
+            .Distinct()
+            .OrderBy(c => c)
+            .ToListAsync();
+
+        return new EventFacetsDto
+        {
+            Genres = genres,
+            Cities = cities
         };
     }
 

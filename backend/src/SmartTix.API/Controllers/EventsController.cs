@@ -28,6 +28,14 @@ public class EventsController : ControllerBase
         return Ok(ApiResponse<object>.Ok(result, "Events retrieved successfully"));
     }
 
+   [HttpGet("facets")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetFacets()
+    {
+        var result = await _eventService.GetFacetsAsync();
+        return Ok(ApiResponse<object>.Ok(result, "Facets retrieved successfully"));
+    }
+
     [HttpGet("{id:guid}")]
     [AllowAnonymous]
     public async Task<IActionResult> GetById(Guid id)

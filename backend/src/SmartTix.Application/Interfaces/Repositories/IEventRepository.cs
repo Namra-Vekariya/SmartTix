@@ -7,6 +7,7 @@ namespace SmartTix.Application.Interfaces.Repositories;
 public interface IEventRepository
 {
     Task<PagedResult<Event>> GetAllAsync(EventQueryParams queryParams);
+    Task<EventFacetsDto> GetFacetsAsync();
     Task<Event?> GetByIdAsync(Guid id);
     Task<Event?> GetByIdWithCategoriesAsync(Guid id);
     Task AddAsync(Event eventEntity);

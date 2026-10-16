@@ -72,7 +72,7 @@ export class AuthService {
     if (this.refreshInFlight$) {
       return this.refreshInFlight$;
     }
-
+    
     this.refreshInFlight$ = this.http
       .post<ApiResponse<AuthResponse>>(
         `${this.baseUrl}/api/auth/refresh`,
