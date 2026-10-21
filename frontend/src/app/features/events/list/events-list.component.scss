@@ -1,0 +1,15 @@
+.event-card {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+
+  mat-card {
+    transition:
+      box-shadow 150ms ease,
+      transform 150ms ease;
+  }
+
+  &:hover mat-card {
+    transform: translateY(-5px);
+  }
+}
