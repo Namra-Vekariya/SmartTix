@@ -7,6 +7,7 @@ namespace SmartTix.Application.Interfaces.Services;
 public interface IEventService
 {
     Task<PagedResult<EventListDto>> GetAllAsync(EventQueryParams queryParams);
+    Task<EventFacetsDto> GetFacetsAsync();
     Task<EventDetailDto> GetByIdAsync(Guid id);
     Task<EventDetailDto> CreateAsync(CreateEventRequest request, Guid adminUserId);
     Task<EventDetailDto> UpdateAsync(Guid id, UpdateEventRequest request);

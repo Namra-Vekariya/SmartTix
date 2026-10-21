@@ -1,0 +1,25 @@
+<mat-toolbar class="flex justify-between border-b">
+  <a routerLink="/" class="text-lg font-semibold no-underline">SmartTix</a>
+
+  <nav class="flex items-center gap-2">
+    <a mat-button routerLink="/events">Events</a>
+
+    @if (auth.isAuthenticated()) {
+      <a mat-button routerLink="/bookings">My bookings</a>
+
+      @if (auth.isAdmin()) {
+        <a mat-button routerLink="/admin">Admin</a>
+      }
+
+      <button mat-button [matMenuTriggerFor]="userMenu">
+        {{ auth.currentUser()?.fullName }}
+      </button>
+      <mat-menu #userMenu="matMenu">
+        <button mat-menu-item (click)="logout()">Sign out</button>
+      </mat-menu>
+    } @else {
+      <a mat-button routerLink="/login">Sign in</a>
+      <a matFilledButton routerLink="/register">Sign up</a>
+    }
+  </nav>
+</mat-toolbar>
