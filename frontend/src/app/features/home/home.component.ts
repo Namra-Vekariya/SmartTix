@@ -12,7 +12,7 @@ import { RouterLink } from '@angular/router';
         Browse events, pick your seats in real time, and book in seconds.
       </p>
       <div class="mt-8 flex justify-center gap-4">
-        <a matFilledButton routerLink="/events">Browse events</a>
+        <a matButton="filled" routerLink="/events">Browse events</a>
         <a mat-stroked-button routerLink="/register">Create account</a>
       </div>
     </section>

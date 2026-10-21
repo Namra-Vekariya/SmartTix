@@ -1,0 +1,150 @@
+<section class="mx-auto max-w-6xl px-4 pt-16">
+  <h1 class="text-3xl font-bold">Events</h1>
+
+  <!-- ── Filters ─────────────────────────────────────────── -->
+  <form [formGroup]="filters" class="mt-6 flex flex-wrap items-end gap-3">
+    <mat-form-field appearance="outline" class="w-56">
+      <mat-label>Search</mat-label>
+      <input matInput formControlName="search" placeholder="Event or artist" />
+      <mat-icon matSuffix>search</mat-icon>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="w-40">
+      <mat-label>City</mat-label>
+      <mat-select formControlName="city">
+        <mat-option value="">All cities</mat-option>
+        @for (city of facets().cities; track city) {
+          <mat-option [value]="city">{{ city }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="w-40">
+      <mat-label>Genre</mat-label>
+      <mat-select formControlName="genre">
+        <mat-option value="">All genres</mat-option>
+        @for (genre of facets().genres; track genre) {
+          <mat-option [value]="genre">{{ genre }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="w-40">
+      <mat-label>From</mat-label>
+      <input matInput type="date" formControlName="dateFrom" />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="w-40">
+      <mat-label>To</mat-label>
+      <input matInput type="date" formControlName="dateTo" />
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="w-44">
+      <mat-label>Sort by</mat-label>
+      <mat-select formControlName="sort">
+        @for (option of sortOptions; track option.value) {
+          <mat-option [value]="option.value">{{ option.label }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    @if (hasActiveFilters) {
+      <button mat-button type="button" (click)="clearFilters()">
+        Clear filters
+      </button>
+    }
+  </form>
+
+  <!-- ── Results ─────────────────────────────────────────── -->
+  @if (loading()) {
+    <div class="flex justify-center py-24">
+      <mat-spinner diameter="48" />
+    </div>
+  } @else if (result()?.items.length === 0) {
+    <p class="py-24 text-center text-lg opacity-70">
+      No events match your filters.
+    </p>
+  } @else {
+    <div class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      @for (event of result()?.items; track event.id) {
+        <a
+          class="event-card"
+          [routerLink]="['/events', event.id]"
+        >
+          <mat-card class="h-full">
+            @if (event.posterImageUrl) {
+              <img
+                mat-card-image
+                [src]="event.posterImageUrl"
+                [alt]="event.name"
+                class="h-44 object-cover"
+              />
+            } @else {
+              <div
+                class="flex h-44 items-center justify-center bg-primary/10"
+              >
+                <mat-icon class="text-5xl opacity-40">confirmation_number</mat-icon>
+              </div>
+            }
+
+            <mat-card-content class="pt-3">
+              <div class="flex items-start justify-between gap-2">
+                <h2 class="text-lg font-semibold leading-tight">
+                  {{ event.name }}
+                </h2>
+                @if (event.genre) {
+                  <span class="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-xs">
+                    {{ event.genre }}
+                  </span>
+                }
+              </div>
+
+              <p class="mt-1 text-sm opacity-70">{{ event.artistName }}</p>
+
+              <div class="mt-3 flex items-center gap-1 text-sm opacity-70">
+                <mat-icon class="text-base">event</mat-icon>
+                {{ event.eventDate | date: 'EEE, MMM d, y, h:mm a' }}
+              </div>
+              <div class="mt-1 flex items-center gap-1 text-sm opacity-70">
+                <mat-icon class="text-base">location_on</mat-icon>
+                {{ event.venueName }}, {{ event.venueCity }}
+              </div>
+            </mat-card-content>
+
+            <mat-card-actions class="flex items-center justify-between px-4 pb-3">
+              <span class="font-semibold">
+                @if (event.startingPrice > 0) {
+                  From {{ event.startingPrice | currency }}
+                } @else {
+                  Free
+                }
+              </span>
+              <span
+                class="text-xs"
+                [class.opacity-70]="event.availableSeatsCount > 0"
+                [class.text-red-600]="event.availableSeatsCount === 0"
+              >
+                @if (event.availableSeatsCount === 0) {
+                  Sold out
+                } @else {
+                  {{ event.availableSeatsCount }} / {{ event.totalSeatsCount }} seats
+                }
+              </span>
+            </mat-card-actions>
+          </mat-card>
+        </a>
+      }
+    </div>
+
+    <!-- ── Pagination — driven by the backend PagedResult ── -->
+    <mat-paginator
+      class="mt-6"
+      [length]="result()?.totalCount ?? 0"
+      [pageIndex]="(result()?.page ?? 1) - 1"
+      [pageSize]="result()?.pageSize ?? 12"
+      [pageSizeOptions]="[12, 24, 48]"
+      (page)="onPage($event)"
+      showFirstLastButtons
+    />
+  }
+</section>

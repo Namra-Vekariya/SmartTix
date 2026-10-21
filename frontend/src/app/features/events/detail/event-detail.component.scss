@@ -1,0 +1,19 @@
+.seat {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px 4px 10px 10px;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: transform 100ms ease;
+
+  &:hover:not(:disabled) {
+    transform: scale(1.15);
+  }
+
+  &.held,
+  &.booked {
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+}
