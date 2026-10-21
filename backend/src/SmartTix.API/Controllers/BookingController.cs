@@ -27,6 +27,14 @@ public class BookingsController : ControllerBase
         return Ok(ApiResponse<HoldSeatsResponse>.Ok(result, "Seats held successfully"));
     }
 
+    [HttpGet("hold/{holdId:guid}")]
+    public async Task<IActionResult> GetHold(Guid holdId)
+    {
+        var userId = GetUserIdFromClaims();
+        var result = await _bookingService.GetHoldDetailsAsync(holdId, userId);
+        return Ok(ApiResponse<HoldDetailsDto>.Ok(result, "Hold retrieved successfully"));
+    }
+
     [HttpPost("confirm")]
     public async Task<IActionResult> ConfirmBooking([FromBody] ConfirmBookingRequest request)
     {

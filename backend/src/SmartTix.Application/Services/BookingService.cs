@@ -195,6 +195,42 @@ public class BookingService : IBookingService
         };
     }
 
+    public async Task<HoldDetailsDto> GetHoldDetailsAsync(Guid holdId, Guid userId)
+    {
+        var booking = await _bookingRepository.GetByHoldIdAsync(holdId.ToString());
+
+        if (booking is null)
+            throw new KeyNotFoundException("Booking hold not found");
+
+        if (booking.UserId != userId)
+            throw new UnauthorizedAccessException(
+                "You are not authorized to view this hold");
+
+        var status = booking.Status;
+        if (status == BookingStatus.Pending && booking.ExpiresAt < DateTime.UtcNow)
+            status = BookingStatus.Expired;
+
+        return new HoldDetailsDto
+        {
+            HoldId = Guid.Parse(booking.HoldId!),
+            BookingId = booking.Id,
+            Status = status.ToString(),
+            EventId = booking.EventId,
+            EventName = booking.Event.Name,
+            ExpiresAt = booking.ExpiresAt,
+            TotalAmount = booking.TotalAmount,
+            Seats = booking.BookingSeats.Select(bs => new HeldSeatDto
+            {
+                SeatId = bs.SeatId,
+                SeatCode = bs.Seat.SeatCode,
+                CategoryName = bs.Seat.SeatCategory.Name,
+                Price = bs.PriceAtBooking,
+                RowLabel = bs.Seat.RowLabel,
+                SeatNumber = bs.Seat.SeatNumber
+            }).ToList()
+        };
+    }
+
     public async Task<BookingDetailDto> ConfirmBookingAsync(
         ConfirmBookingRequest request,
         Guid userId)
