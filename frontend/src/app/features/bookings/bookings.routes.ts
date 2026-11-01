@@ -1,14 +1,9 @@
 import { Routes } from '@angular/router';
-import { Component } from '@angular/core';
-
-@Component({
-  selector: 'app-bookings-placeholder',
-  template: `<p class="pt-16 text-center text-lg opacity-70">
-    My bookings — coming soon
-  </p>`,
-})
-class BookingsPlaceholderComponent {}
-
+import { BookingsListComponent } from './list/bookings-list.component';
+import { CheckoutComponent } from './checkout/checkout.component';
+import { BookingDetailComponent } from './detail/booking-detail.component';
 export const BOOKING_ROUTES: Routes = [
-  { path: '', component: BookingsPlaceholderComponent },
+  { path: '', component: BookingsListComponent },
+  { path: 'checkout/:holdId', component: CheckoutComponent },
+  { path: ':id', component: BookingDetailComponent },
 ];

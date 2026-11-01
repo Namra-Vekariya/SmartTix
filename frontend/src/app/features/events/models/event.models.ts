@@ -1,6 +1,6 @@
 /** Mirrors SmartTix.Application.DTOs.Events / Seats (camelCase JSON). */
 
-export type EventStatus = 'Draft'|'Published' | 'Ongoing' | 'Completed' | 'Cancelled';
+export type EventStatus = 'Draft' | 'Published' | 'Ongoing' | 'Completed' | 'Cancelled';
 
 export interface EventSummary {
   id: string;
@@ -50,7 +50,7 @@ export interface EventFacets {
   cities: string[];
 }
 
-export type SeatStatus = 'Available' | 'Held' | 'Booked';
+export type SeatStatus = 'Available' | 'Held' | 'Booked' | 'Blocked';
 
 export interface Seat {
   id: string;

@@ -1,0 +1,161 @@
+<section class="mx-auto max-w-4xl px-4 pt-16">
+  @if (loading()) {
+    <div class="flex justify-center py-32">
+      <mat-spinner diameter="48" />
+    </div>
+  } @else if (booking(); as b) {
+    <!-- Post-payment success banner -->
+    @if (justConfirmed()) {
+      <div class="flex items-start gap-3 rounded-lg border border-green-200 bg-green-50 p-4">
+        <mat-icon class="text-green-600">check_circle</mat-icon>
+        <div>
+          <p class="font-semibold text-green-900">Booking confirmed!</p>
+          <p class="text-sm text-green-800">
+            A confirmation email with your ticket is on its way to
+            <span class="font-medium">{{ b.bookerEmail }}</span
+            >.
+          </p>
+        </div>
+      </div>
+    }
+
+    <div class="mt-6 flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <div class="flex items-center gap-3">
+          <h1 class="text-2xl font-bold">{{ b.bookingReference }}</h1>
+          <span
+            class="rounded-full px-3 py-0.5 text-xs font-medium"
+            [class]="statusClass(b.status)"
+          >
+            {{ b.status }}
+          </span>
+        </div>
+        <p class="mt-1 text-sm opacity-70">Booked on {{ b.bookedAt | date: 'MMM d, y, h:mm a' }}</p>
+      </div>
+
+      <div class="flex flex-wrap gap-2">
+        @if (canDownloadTicket()) {
+          <button
+            matButton="filled"
+            type="button"
+            [disabled]="downloading()"
+            (click)="downloadTicket()"
+          >
+            @if (downloading()) {
+              <span class="flex items-center gap-2">
+                <mat-spinner diameter="18" />
+                Preparing…
+              </span>
+            } @else {
+              <span class="flex items-center gap-2">
+                <mat-icon class="text-base">download</mat-icon>
+                Download ticket
+              </span>
+            }
+          </button>
+        }
+
+        @if (canCancel()) {
+          @if (!confirmCancel()) {
+            <button mat-stroked-button type="button" (click)="confirmCancel.set(true)">
+              Cancel booking
+            </button>
+          } @else {
+            <div class="flex items-center gap-2">
+              <span class="text-sm">Cancel this booking?</span>
+              <button
+                matButton="filled"
+                type="button"
+                class="!bg-red-600"
+                [disabled]="cancelling()"
+                (click)="cancelBooking()"
+              >
+                @if (cancelling()) {
+                  <mat-spinner diameter="16" />
+                } @else {
+                  Yes, cancel
+                }
+              </button>
+              <button mat-button type="button" (click)="confirmCancel.set(false)">
+                Keep booking
+              </button>
+            </div>
+          }
+        }
+      </div>
+    </div>
+
+    <!-- Event summary -->
+    <mat-card class="mt-6">
+      <mat-card-content class="flex flex-wrap items-center gap-4 p-6">
+        @if (b.event.posterImageUrl) {
+          <img
+            [src]="b.event.posterImageUrl"
+            [alt]="b.event.name"
+            class="h-24 w-32 rounded object-cover"
+          />
+        } @else {
+          <div class="flex h-24 w-32 items-center justify-center rounded bg-primary/10">
+            <mat-icon class="text-3xl opacity-40">confirmation_number</mat-icon>
+          </div>
+        }
+        <div class="min-w-0 flex-1">
+          <a
+            class="text-lg font-semibold underline-offset-2 hover:underline"
+            [routerLink]="['/events', b.event.id]"
+          >
+            {{ b.event.name }}
+          </a>
+          <p class="text-sm opacity-70">{{ b.event.artistName }}</p>
+          <p class="mt-1 text-sm opacity-70">
+            {{ b.event.eventDate | date: 'EEE, MMM d, y, h:mm a' }} · {{ b.event.venueName }},
+            {{ b.event.venueCity }}
+          </p>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Seats -->
+    <mat-card class="mt-4">
+      <mat-card-content class="p-6">
+        <h2 class="text-lg font-semibold">Seats</h2>
+        <ul class="mt-3 divide-y">
+          @for (seat of b.seats; track seat.seatId) {
+            <li class="flex items-center justify-between py-2 text-sm">
+              <span>
+                <span class="font-medium">{{ seat.seatCode }}</span>
+                <span class="opacity-60">
+                  · Row {{ seat.rowLabel }}, seat {{ seat.seatNumber }} ·
+                  {{ seat.categoryName }}
+                </span>
+              </span>
+              <span>{{ seat.priceAtBooking | currency }}</span>
+            </li>
+          }
+        </ul>
+
+        <div class="mt-4 flex items-center justify-between border-t pt-4">
+          <div class="text-sm opacity-70">
+            Payment status: <span class="font-medium">{{ b.paymentStatus }}</span>
+          </div>
+          <div class="text-xl font-bold">{{ b.totalAmount | currency }}</div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Booker -->
+    <mat-card class="mt-4">
+      <mat-card-content class="p-6">
+        <h2 class="text-lg font-semibold">Booked by</h2>
+        <p class="mt-2 text-sm">{{ b.bookerName }} · {{ b.bookerEmail }} · {{ b.bookerPhone }}</p>
+      </mat-card-content>
+    </mat-card>
+
+    <div class="mt-6">
+      <a mat-button routerLink="/bookings">
+        <mat-icon class="text-base">arrow_back</mat-icon>
+        My bookings
+      </a>
+    </div>
+  }
+</section>

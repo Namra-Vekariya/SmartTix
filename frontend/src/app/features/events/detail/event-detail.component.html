@@ -91,8 +91,10 @@
               <div>
                 <p class="font-medium">{{ category.name }}</p>
                 <p class="text-sm opacity-70">
-                  {{ category.price | currency }} ·
-                  {{ category.availableSeats }}/{{ category.totalSeats }} left
+                  {{ category.price | currency }} · {{ category.availableSeats }}/{{
+                    category.totalSeats
+                  }}
+                  left
                 </p>
               </div>
             </div>
@@ -103,7 +105,7 @@
       <!-- Seat map -->
       @if (seatMap(); as map) {
         <h2 class="mt-10 text-xl font-semibold">Seat map</h2>
-        <p class="mt-1 text-sm opacity-70">Updates in real time</p>
+        <p class="mt-1 text-sm opacity-70">Tap available seats to select — updates in real time</p>
 
         <div class="mt-4 overflow-x-auto rounded-lg border p-6">
           <div
@@ -122,9 +124,11 @@
                     class="seat"
                     [style.backgroundColor]="seatColor(seat)"
                     [disabled]="seat.status !== 'Available'"
-                    [class.booked]="seat.status === 'Booked'"
+                    [class.booked]="seat.status === 'Booked' || seat.status === 'Blocked'"
                     [class.held]="seat.status === 'Held'"
+                    [class.selected]="isSelected(seat)"
                     [title]="seatTooltip(seat)"
+                    (click)="toggleSeat(seat)"
                   ></button>
                 }
               </div>
@@ -143,6 +147,9 @@
               </span>
             }
             <span class="flex items-center gap-1">
+              <span class="h-3 w-3 rounded-full bg-primary"></span> Selected
+            </span>
+            <span class="flex items-center gap-1">
               <span class="h-3 w-3 rounded-full bg-amber-500"></span> Held
             </span>
             <span class="flex items-center gap-1">
@@ -152,5 +159,36 @@
         </div>
       }
     </div>
+
+    <!-- Sticky action bar — appears as soon as a seat is selected -->
+    @if (selectedCount() > 0) {
+      <div
+        class="fixed inset-x-0 bottom-0 z-10 border-t bg-background shadow-[0_-4px_12px_rgba(0,0,0,0.08)]"
+      >
+        <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
+          <div class="min-w-0">
+            <p class="font-medium">
+              {{ selectedCount() }} seat{{ selectedCount() === 1 ? '' : 's' }} selected
+            </p>
+            <p class="truncate text-sm opacity-70">{{ selectedSeatsLabel() }}</p>
+          </div>
+          <div class="flex items-center gap-4">
+            <span class="text-xl font-semibold">{{ selectedTotal() | currency }}</span>
+            <button
+              matButton="filled"
+              type="button"
+              (click)="proceedToCheckout()"
+              [disabled]="holding()"
+            >
+              @if (holding()) {
+                <mat-spinner diameter="18" />
+              } @else {
+                Proceed to checkout
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    }
   }
 }

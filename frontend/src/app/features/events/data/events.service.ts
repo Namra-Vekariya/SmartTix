@@ -49,12 +49,6 @@ export class EventsService {
       .pipe(map((response) => this.unwrap(response)));
   }
 
-  /**
-   * Unwraps the ApiResponse envelope. HTTP-level failures (4xx/5xx/network)
-   * are toasted by the global error interceptor; envelope failures
-   * (success=false or missing data on a 200) never reach that interceptor,
-   * so they are toasted here and rethrown for the caller's error path.
-   */
   private unwrap<T>(response: ApiResponse<T>): T {
     if (!response.success || response.data === null) {
       const message = response.message || 'Received an unexpected empty response';

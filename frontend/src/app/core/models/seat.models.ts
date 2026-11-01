@@ -1,7 +1,7 @@
 /** Mirrors SmartTix.Application.DTOs.Seats — SignalR "seatsChanged" payloads. */
 export interface SeatsChangedEvent {
   eventId: string;
-  status: 'held' | 'confirmed' | 'payment_failed' | 'cancelled' | 'expired';
+  status: 'Available' | 'Held' | 'Booked' | 'Blocked';
   reason: string;
   seats: ChangedSeat[];
   timestamp: string;

@@ -68,18 +68,23 @@ public class BookingService : IBookingService
             throw new InvalidOperationException(
                 "This event is not available for booking");
 
-        // ── Step 3: Validate seats belong to this event ─────
+        var seatIds = request.SeatIds.Distinct().ToList();
+        var previousHold = await _bookingRepository.GetActiveHoldAsync(userId, request.EventId);
+        if (previousHold is not null)
+            await ReleaseHoldCoreAsync(previousHold, "released");
+
+        // ── Step 4: Validate seats belong to this event ─────
         var seats = await _seatRepository.GetByEventIdAsync(request.EventId);
 
         var requestedSeats = seats
-            .Where(s => request.SeatIds.Contains(s.Id))
+            .Where(s => seatIds.Contains(s.Id))
             .ToList();
 
-        if (requestedSeats.Count != request.SeatIds.Count)
+        if (requestedSeats.Count != seatIds.Count)
             throw new InvalidOperationException(
                 "One or more seats do not belong to this event");
 
-        // ── Step 4: Check all seats are available ────────────
+        // ── Step 5: Check all seats are available ────────────
         var unavailableSeats = requestedSeats
             .Where(s => s.Status != SeatStatus.Available)
             .ToList();
@@ -91,11 +96,10 @@ public class BookingService : IBookingService
                 $"Seats {codes} are no longer available");
         }
 
-        // ── Step 5: Acquire Redis lock for each seat ─────────
+        // ── Step 6: Acquire Redis lock for each seat ─────────
         // Track which seats we successfully locked
         // If any seat fails, we must release all previously acquired locks
         var lockedSeatIds = new List<Guid>();
-        var holdId = Guid.NewGuid().ToString();
         var totalAmount = requestedSeats.Sum(s => s.SeatCategory.Price);
         Booking booking;
 
@@ -119,12 +123,6 @@ public class BookingService : IBookingService
                 lockedSeatIds.Add(seat.Id);
             }
 
-            // ── Step 6: Create pending booking in PostgreSQL ─────
-            // Seats are marked Held in the same transaction as the booking so
-            // the REST seat map and availability counts reflect the hold for
-            // users who load the page later. Redis locks are released if the
-            // database write fails — otherwise seats would stay locked for the
-            // full TTL with no booking record.
             foreach (var seat in requestedSeats)
             {
                 seat.Status = SeatStatus.Held;
@@ -139,7 +137,7 @@ public class BookingService : IBookingService
                 Status = BookingStatus.Pending,
                 TotalAmount = totalAmount,
                 PaymentStatus = PaymentStatus.Pending,
-                HoldId = holdId,
+                HoldId = Guid.NewGuid().ToString(),
                 ExpiresAt = DateTime.UtcNow.AddMinutes(10),
                 BookingSeats = requestedSeats.Select(s => new BookingSeat
                 {
@@ -175,23 +173,15 @@ public class BookingService : IBookingService
             "held",
             requestedSeats));
 
-        // ── Step 7: Return hold response ─────────────────────
+        // ── Step 8: Return hold response ─────────────────────
         return new HoldSeatsResponse
         {
-            HoldId = Guid.Parse(holdId),
+            HoldId = Guid.Parse(booking.HoldId!),
             EventId = request.EventId,
             EventName = eventEntity.Name,
             ExpiresAt = booking.ExpiresAt,
-            TotalAmount = totalAmount,
-            Seats = requestedSeats.Select(s => new HeldSeatDto
-            {
-                SeatId = s.Id,
-                SeatCode = s.SeatCode,
-                CategoryName = s.SeatCategory.Name,
-                Price = s.SeatCategory.Price,
-                RowLabel = s.RowLabel,
-                SeatNumber = s.SeatNumber
-            }).ToList()
+            TotalAmount = booking.TotalAmount,
+            Seats = requestedSeats.Select(s => ToHeldSeatDto(s, s.SeatCategory.Price)).ToList()
         };
     }
 
@@ -229,6 +219,19 @@ public class BookingService : IBookingService
                 SeatNumber = bs.Seat.SeatNumber
             }).ToList()
         };
+    }
+
+    public async Task ReleaseHoldAsync(Guid holdId, Guid userId)
+    {
+        var booking = await _bookingRepository.GetByHoldIdAsync(holdId.ToString());
+
+        if (booking is null || booking.UserId != userId)
+            throw new KeyNotFoundException("Hold not found");
+
+        if (booking.Status != BookingStatus.Pending)
+            return;
+
+        await ReleaseHoldCoreAsync(booking, "released");
     }
 
     public async Task<BookingDetailDto> ConfirmBookingAsync(
@@ -405,6 +408,19 @@ public class BookingService : IBookingService
 
     // ── Private helpers ──────────────────────────────────────
 
+    private static HeldSeatDto ToHeldSeatDto(Seat seat, decimal price)
+    {
+        return new HeldSeatDto
+        {
+            SeatId = seat.Id,
+            SeatCode = seat.SeatCode,
+            CategoryName = seat.SeatCategory.Name,
+            Price = price,
+            RowLabel = seat.RowLabel,
+            SeatNumber = seat.SeatNumber
+        };
+    }
+
     private static SeatsChangedEvent BuildSeatChange(
         Guid eventId,
         SeatStatus newStatus,
@@ -444,6 +460,24 @@ public class BookingService : IBookingService
             await _redisService.ReleaseSeatLockAsync(
                 booking.EventId,
                 bookingSeat.SeatId);
+    }
+    
+    private async Task ReleaseHoldCoreAsync(Booking booking, string reason)
+    {
+        await ReleaseBookingLocksAsync(booking);
+
+        booking.Status = BookingStatus.Cancelled;
+        booking.UpdatedAt = DateTime.UtcNow;
+
+        ReleaseHeldSeats(booking);
+
+        await _bookingRepository.SaveChangesAsync();
+
+        await _seatNotifier.NotifySeatsChangedAsync(BuildSeatChange(
+            booking.EventId,
+            SeatStatus.Available,
+            reason,
+            booking.BookingSeats.Select(bs => bs.Seat)));
     }
 
     private static bool SimulateMockPayment()

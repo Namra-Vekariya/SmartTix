@@ -46,10 +46,26 @@ public class BookingRepository : IBookingRepository
         return await _context.Bookings
             .Include(b => b.BookingSeats)
                 .ThenInclude(bs => bs.Seat)
+                    .ThenInclude(s => s.SeatCategory)
             .Include(b => b.Event)
             .Where(b => b.UserId == userId)
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
+    }
+
+    public async Task<Booking?> GetActiveHoldAsync(Guid userId, Guid eventId)
+    {
+           return await _context.Bookings
+            .Include(b => b.BookingSeats)
+                .ThenInclude(bs => bs.Seat)
+                    .ThenInclude(s => s.SeatCategory)
+            .Where(b =>
+                b.UserId == userId &&
+                b.EventId == eventId &&
+                b.Status == BookingStatus.Pending &&
+                b.ExpiresAt > DateTime.UtcNow)
+            .OrderByDescending(b => b.CreatedAt)
+            .FirstOrDefaultAsync();
     }
 
     public async Task<List<Booking>> GetExpiredHoldsAsync(int limit)
@@ -67,11 +83,6 @@ public class BookingRepository : IBookingRepository
 
     public async Task<bool> TryExpireBookingAsync(Guid bookingId, DateTime utcNow)
     {
-        // Atomic compare-and-swap inside one transaction:
-        // 1. Flip Pending → Expired only if still Pending and past ExpiresAt.
-        //    If confirm/cancel won the race, rows affected = 0 → nothing changes.
-        // 2. Free only this booking's seats, and only while they are still Held —
-        //    a seat that got re-held by another user is left alone.
         await using var transaction = await _context.Database.BeginTransactionAsync();
 
         var claimed = await _context.Bookings

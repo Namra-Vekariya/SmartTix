@@ -1,0 +1,88 @@
+<section class="mx-auto max-w-4xl px-4 pt-16">
+  <h1 class="text-3xl font-bold">My bookings</h1>
+
+  @if (loading()) {
+    <div class="flex justify-center py-24">
+      <mat-spinner diameter="48" />
+    </div>
+  } @else if (bookings().length === 0) {
+    <div class="py-24 text-center">
+      <mat-icon class="text-6xl opacity-30">confirmation_number</mat-icon>
+      <p class="mt-4 text-lg opacity-70">You haven't booked anything yet.</p>
+      <a matButton="filled" class="mt-6" routerLink="/events">Browse events</a>
+    </div>
+  } @else {
+    <div class="mt-6 space-y-4">
+      @for (booking of bookings(); track booking.id) {
+        <mat-card>
+          <mat-card-content class="flex flex-wrap items-center gap-4 p-5">
+            @if (booking.event.posterImageUrl) {
+              <img
+                [src]="booking.event.posterImageUrl"
+                [alt]="booking.event.name"
+                class="h-20 w-28 rounded object-cover"
+              />
+            } @else {
+              <div class="flex h-20 w-28 items-center justify-center rounded bg-primary/10">
+                <mat-icon class="text-2xl opacity-40">confirmation_number</mat-icon>
+              </div>
+            }
+
+            <div class="min-w-0 flex-1">
+              <div class="flex flex-wrap items-center gap-2">
+                <a
+                  class="font-semibold underline-offset-2 hover:underline"
+                  [routerLink]="['/bookings', booking.id]"
+                >
+                  {{ booking.event.name }}
+                </a>
+                <span
+                  class="rounded-full px-2 py-0.5 text-xs font-medium"
+                  [class]="statusClass(booking.status)"
+                >
+                  {{ booking.status }}
+                </span>
+              </div>
+              <p class="mt-0.5 text-sm opacity-70">
+                {{ booking.event.eventDate | date: 'EEE, MMM d, y, h:mm a' }} ·
+                {{ booking.event.venueCity }}
+              </p>
+              <p class="mt-0.5 text-sm opacity-70">
+                {{ booking.bookingReference }} ·
+                {{ booking.seats.length }}
+                seat{{ booking.seats.length === 1 ? '' : 's' }} ·
+                {{ seatSummary(booking) }}
+              </p>
+            </div>
+
+            <div class="flex flex-col items-end gap-2">
+              <span class="text-lg font-semibold">
+                {{ booking.totalAmount | currency }}
+              </span>
+              <div class="flex gap-1">
+                @if (booking.status === 'Confirmed') {
+                  <button
+                    mat-button
+                    type="button"
+                    [disabled]="downloadingId() === booking.id"
+                    (click)="downloadTicket(booking)"
+                  >
+                    @if (downloadingId() === booking.id) {
+                      <mat-spinner diameter="16" />
+                    } @else {
+                      <span class="flex items-center gap-1">
+                        <mat-icon class="text-base">download</mat-icon>
+                        Ticket
+                      </span>
+                    }
+                  </button>
+                }
+                <a mat-stroked-button [routerLink]="['/bookings', booking.id]"> Details </a>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      }
+    </div>
+  }
+</section>

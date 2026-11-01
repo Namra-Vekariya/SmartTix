@@ -1,0 +1,185 @@
+<section class="mx-auto max-w-6xl px-4 pt-16">
+  @if (loading()) {
+    <div class="flex justify-center py-32">
+      <mat-spinner diameter="48" />
+    </div>
+  } @else if (hold(); as h) {
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h1 class="text-3xl font-bold">Checkout</h1>
+        <p class="mt-1 opacity-70">{{ h.eventName }}</p>
+      </div>
+
+      <!-- Countdown — the hold's remaining life -->
+      <div
+        class="flex items-center gap-2 rounded-lg border px-4 py-2"
+        [class.border-red-500]="remainingSeconds() < 60"
+        [class.text-red-600]="remainingSeconds() < 60"
+      >
+        <mat-icon class="text-base">timer</mat-icon>
+        <span class="font-mono text-lg font-semibold tabular-nums">
+          {{ countdown() }}
+        </span>
+        <span class="text-sm opacity-70">left to complete payment</span>
+      </div>
+    </div>
+
+    <p class="mt-2 max-w-prose text-sm opacity-70">
+      Your seats are held for you while the timer runs. If payment isn't completed in time, they're
+      automatically released back to other users.
+    </p>
+
+    <div class="mt-8 grid gap-8 lg:grid-cols-[1fr_380px]">
+      <!-- ── Forms ─────────────────────────────────────── -->
+      <div class="space-y-8">
+        <!-- Contact details -->
+        <mat-card>
+          <mat-card-content class="p-6">
+            <h2 class="text-lg font-semibold">Your details</h2>
+            <form [formGroup]="contactForm" class="mt-4 grid gap-4 sm:grid-cols-2">
+              <mat-form-field appearance="outline">
+                <mat-label>Full name</mat-label>
+                <input matInput formControlName="fullName" autocomplete="name" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Email</mat-label>
+                <input matInput type="email" formControlName="email" autocomplete="email" />
+                <mat-error>Enter a valid email</mat-error>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Phone</mat-label>
+                <input
+                  matInput
+                  formControlName="phone"
+                  autocomplete="tel"
+                  inputmode="numeric"
+                  (input)="onPhoneInput($event)"
+                />
+                <mat-error>Enter a valid phone number</mat-error>
+              </mat-form-field>
+            </form>
+            <p class="text-xs opacity-60">
+              Your ticket and booking confirmation are sent to this email.
+            </p>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Mock payment -->
+        <mat-card>
+          <mat-card-content class="p-6">
+            <div class="flex items-center justify-between">
+              <h2 class="text-lg font-semibold">Payment</h2>
+              <span class="rounded-full bg-amber-100 px-3 py-1 text-xs text-amber-800">
+                Simulated payment — no real charge
+              </span>
+            </div>
+
+            <form [formGroup]="paymentForm" class="mt-4 grid gap-4">
+              <mat-form-field appearance="outline">
+                <mat-label>Card number</mat-label>
+                <input
+                  matInput
+                  formControlName="cardNumber"
+                  (input)="onCardInput($event)"
+                  inputmode="numeric"
+                  autocomplete="cc-number"
+                  placeholder="1234 5678 9012 3456"
+                />
+                <mat-icon matSuffix>credit_card</mat-icon>
+                <mat-error>Enter a 16-digit card number</mat-error>
+              </mat-form-field>
+
+              <div class="grid grid-cols-2 gap-4">
+                <mat-form-field appearance="outline">
+                  <mat-label>Expiry (MM/YY)</mat-label>
+                  <input
+                    matInput
+                    formControlName="expiry"
+                    (input)="onExpiryInput($event)"
+                    inputmode="numeric"
+                    autocomplete="cc-exp"
+                    placeholder="09/28"
+                  />
+                  <mat-error>Use MM/YY format</mat-error>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>CVV</mat-label>
+                  <input
+                    matInput
+                    type="password"
+                    formControlName="cvv"
+                    (input)="onCvvInput($event)"
+                    inputmode="numeric"
+                    autocomplete="cc-csc"
+                    placeholder="123"
+                  />
+                  <mat-error>3–4 digits</mat-error>
+                </mat-form-field>
+              </div>
+            </form>
+
+            <p class="text-xs opacity-60">
+              This is a simulated gateway for demo purposes. Card details are validated for format
+              only and are never stored. Payments may randomly decline — your seats stay held so you
+              can retry until the timer runs out.
+            </p>
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+      <!-- ── Order summary ─────────────────────────────── -->
+      <mat-card class="h-fit">
+        <mat-card-content class="p-6">
+          <h2 class="text-lg font-semibold">Order summary</h2>
+
+          <ul class="mt-4 divide-y">
+            @for (seat of h.seats; track seat.seatId) {
+              <li class="flex items-center justify-between py-2 text-sm">
+                <span>
+                  <span class="font-medium">{{ seat.seatCode }}</span>
+                  <span class="opacity-60"> · {{ seat.categoryName }}</span>
+                </span>
+                <span>{{ seat.price | currency }}</span>
+              </li>
+            }
+          </ul>
+
+          <div class="mt-4 flex items-center justify-between border-t pt-4">
+            <span class="font-semibold">Total</span>
+            <span class="text-xl font-bold">{{ h.totalAmount | currency }}</span>
+          </div>
+
+          <button
+            matButton="filled"
+            type="button"
+            class="mt-6 w-full"
+            [disabled]="!canPay()"
+            (click)="pay()"
+          >
+            @if (paying()) {
+              <span class="flex items-center gap-2">
+                <mat-spinner diameter="18" />
+                Processing…
+              </span>
+            } @else {
+              Pay {{ h.totalAmount | currency }}
+            }
+          </button>
+
+          @if (holdExpired()) {
+            <p class="mt-3 text-center text-sm text-red-600">
+              This hold has expired. Please go back and select your seats again.
+            </p>
+          }
+
+          <button mat-button type="button" class="mt-2 w-full" (click)="releaseAndBack()">
+            Back to event
+          </button>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  }
+</section>

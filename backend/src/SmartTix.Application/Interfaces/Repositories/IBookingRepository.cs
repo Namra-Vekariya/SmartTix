@@ -8,6 +8,7 @@ public interface IBookingRepository
     Task<Booking?> GetByIdWithDetailsAsync(Guid id);
     Task<Booking?> GetByHoldIdAsync(string holdId);
     Task<List<Booking>> GetByUserIdAsync(Guid userId);
+    Task<Booking?> GetActiveHoldAsync(Guid userId, Guid eventId);
     Task<List<Booking>> GetExpiredHoldsAsync(int limit);
     Task<bool> TryExpireBookingAsync(Guid bookingId, DateTime utcNow);
     Task AddAsync(Booking booking);
