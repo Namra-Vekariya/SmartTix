@@ -102,12 +102,100 @@
         </div>
       }
 
+      <!-- AI seat finder -->
+      <div class="mt-10 rounded-lg border p-6">
+        <div class="flex items-center gap-2">
+          <mat-icon class="text-base">auto_awesome</mat-icon>
+          <h2 class="text-xl font-semibold">AI seat finder</h2>
+        </div>
+        <p class="mt-1 text-sm opacity-70">
+          Describe the seats you want — the assistant suggests the best available options.
+        </p>
+
+        <div class="mt-4 flex flex-wrap items-start gap-3">
+          <mat-form-field appearance="outline" class="min-w-72 flex-1">
+            <mat-label>What seats are you looking for?</mat-label>
+            <input
+              matInput
+              [value]="aiQuery()"
+              (input)="onAiQueryInput($event)"
+              (keyup.enter)="askAi()"
+              maxlength="500"
+              placeholder="e.g. 4 seats together under ₹5000, near the centre"
+            />
+          </mat-form-field>
+          <button
+            matButton="filled"
+            type="button"
+            class="mt-1"
+            [disabled]="!canAsk()"
+            (click)="askAi()"
+          >
+            @if (asking()) {
+              <mat-spinner diameter="18" />
+            } @else {
+              Find seats
+            }
+          </button>
+        </div>
+
+        <div class="mt-1 flex flex-wrap gap-2">
+          @for (prompt of examplePrompts; track prompt) {
+            <button
+              mat-stroked-button
+              type="button"
+              class="!text-xs"
+              [disabled]="asking()"
+              (click)="useExamplePrompt(prompt)"
+            >
+              {{ prompt }}
+            </button>
+          }
+        </div>
+
+        @if (aiResult(); as result) {
+          <div class="mt-4">
+            @switch (result.status) {
+              @case ('ok') {
+                <p class="text-sm font-medium">{{ result.summary }}</p>
+                <div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  @for (rec of result.recommendations; track rec.seatCodes.join()) {
+                    <div class="rounded-lg border p-4">
+                      <p class="font-medium">{{ rec.seatCodes.join(', ') }}</p>
+                      <p class="mt-1 text-sm opacity-70">{{ rec.reason }}</p>
+                      <div class="mt-3 flex items-center justify-between">
+                        <span class="font-semibold">{{ rec.totalPrice | currency }}</span>
+                        <button matButton="filled" type="button" (click)="applyRecommendation(rec)">
+                          Select
+                        </button>
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+              @case ('out_of_scope') {
+                <div class="rounded-lg border bg-surface-variant p-4 text-sm opacity-80">
+                  {{ result.summary }}
+                </div>
+              }
+              @case ('no_results') {
+                <div
+                  class="rounded-lg border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900"
+                >
+                  {{ result.summary }}
+                </div>
+              }
+            }
+          </div>
+        }
+      </div>
+
       <!-- Seat map -->
       @if (seatMap(); as map) {
         <h2 class="mt-10 text-xl font-semibold">Seat map</h2>
         <p class="mt-1 text-sm opacity-70">Tap available seats to select — updates in real time</p>
 
-        <div class="mt-4 overflow-x-auto rounded-lg border p-6">
+        <div #seatMapSection class="mt-4 overflow-x-auto rounded-lg border p-6">
           <div
             class="mx-auto mb-6 h-8 w-2/3 rounded-t-full bg-surface-variant text-center text-xs leading-8 tracking-widest opacity-60"
           >

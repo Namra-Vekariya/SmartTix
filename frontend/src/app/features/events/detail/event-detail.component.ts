@@ -1,21 +1,26 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, OnInit, ViewChild, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { catchError, Subject, takeUntil } from 'rxjs';
 import { forkJoin, finalize, of } from 'rxjs';
 import { AuthService } from '../../auth/data/auth.service';
 import { SeatsHubService } from '../../../core/services/seats-hub.service';
+import { AiService } from '../data/ai.service';
 import { EventsService } from '../data/events.service';
 import { BookingService } from '../../bookings/data/booking.service';
+import { AiRecommendResponse, SeatRecommendation } from '../models/ai.models';
 import { EventDetail, Seat, SeatMap } from '../models/event.models';
 
 const MAX_SEATS = 6;
+const MIN_AI_QUERY_LENGTH = 5;
 
 @Component({
   selector: 'app-event-detail',
@@ -26,7 +31,9 @@ const MAX_SEATS = 6;
     MatButtonModule,
     MatCardModule,
     MatChipsModule,
+    MatFormFieldModule,
     MatIconModule,
+    MatInputModule,
     MatProgressSpinnerModule,
   ],
   templateUrl: './event-detail.component.html',
@@ -36,11 +43,14 @@ export class EventDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly eventsService = inject(EventsService);
+  private readonly aiService = inject(AiService);
   private readonly seatsHub = inject(SeatsHubService);
   private readonly auth = inject(AuthService);
   private readonly bookingService = inject(BookingService);
   private readonly snackBar = inject(MatSnackBar);
   private readonly destroy$ = new Subject<void>();
+
+  @ViewChild('seatMapSection') private seatMapSection?: ElementRef<HTMLElement>;
 
   readonly loading = signal(true);
   readonly event = signal<EventDetail | null>(null);
@@ -49,6 +59,21 @@ export class EventDetailComponent implements OnInit {
   // Seat ids the user has clicked ,still local — hold happens on Proceed
   readonly selected = signal<Set<string>>(new Set());
   readonly holding = signal(false);
+
+  // AI seat finder — one-shot assistant on top of the live seat map
+  readonly aiQuery = signal('');
+  readonly asking = signal(false);
+  readonly aiResult = signal<AiRecommendResponse | null>(null);
+
+  readonly examplePrompts = [
+    '4 seats together under ₹5000, near the centre',
+    'cheapest 2 seats',
+    '2 seats in row D',
+  ];
+
+  readonly canAsk = computed(
+    () => !this.asking() && this.aiQuery().trim().length >= MIN_AI_QUERY_LENGTH,
+  );
 
   readonly selectedCount = computed(() => this.selected().size);
 
@@ -200,6 +225,67 @@ export class EventDetailComponent implements OnInit {
           this.refreshSeatMap();
         },
       });
+  }
+
+  onAiQueryInput(event: Event): void {
+    this.aiQuery.set((event.target as HTMLInputElement).value);
+  }
+
+  askAi(): void {
+    if (!this.canAsk()) return;
+
+    this.asking.set(true);
+    this.aiService
+      .recommend({ eventId: this.eventId, query: this.aiQuery().trim() })
+      .pipe(
+        finalize(() => this.asking.set(false)),
+        takeUntil(this.destroy$),
+      )
+      .subscribe({
+        next: (result) => this.aiResult.set(result),
+        error: () => this.aiResult.set(null),
+      });
+  }
+
+  useExamplePrompt(prompt: string): void {
+    this.aiQuery.set(prompt);
+    this.askAi();
+  }
+
+  applyRecommendation(rec: SeatRecommendation): void {
+    const map = this.seatMap();
+    if (!map) return;
+
+    const byCode = new Map(map.seats.map((s) => [s.seatCode, s]));
+    const selectable: Seat[] = [];
+    const skipped: string[] = [];
+
+    for (const code of rec.seatCodes) {
+      const seat = byCode.get(code);
+      if (seat && seat.status === 'Available') selectable.push(seat);
+      else skipped.push(code);
+    }
+
+    if (selectable.length === 0) {
+      this.snackBar.open('Those seats are no longer available — try another option.', 'Close', {
+        duration: 4000,
+      });
+      return;
+    }
+
+    const room = Math.max(MAX_SEATS - this.selected().size, 0);
+    const toSelect = selectable.slice(0, room);
+    skipped.push(...selectable.slice(toSelect.length).map((s) => s.seatCode));
+
+    this.selected.set(new Set([...this.selected(), ...toSelect.map((s) => s.id)]));
+
+    if (skipped.length > 0) {
+      this.snackBar.open(`Skipped unavailable seats: ${skipped.join(', ')}.`, 'Close', {
+        duration: 5000,
+      });
+    }
+
+    this.seatMapSection?.nativeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   /** Seats grouped by row label (A, B, C…) for grid rendering. */
